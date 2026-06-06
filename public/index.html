@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Karaoke Party - TV Experience</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
+    <!-- Importar fuente Poppins para un look más estilizado y moderno -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    <style>
+        /* ---------- RESET Y BASE (TODO EL SISTEMA ORIGINAL SE MANTIENE) ---------- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            margin: 0;
+            background: #0a0a2a;
+            color: white;
+            font-family: 'Poppins', 'Segoe UI', system-ui, 'Inter', sans-serif;
+            transition: all 0.3s;
+            overflow-x: hidden;
+        }
+        .tv-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        /* ---------- OVERLAY DE INICIO PREMIUM (FONDO CON FADE IN + TIPOGRAFÍA ESTILIZADA) ---------- */
+        #startOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(10, 10, 42, 0.75), rgba(10, 10, 42, 0.85)), url('concierto');
+            background-size: cover;
+            background-position: center;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            animation: backgroundFadeIn 1.8s ease-out forwards;
+        }
+        
+        /* Animación para que el fondo aparezca con fade-in */
+        @keyframes backgroundFadeIn {
+            0% { opacity: 0; backdrop-filter: blur(0px); }
+            100% { opacity: 1; backdrop-filter: blur(5px); }
+        }
+
+        /* Desvanecimiento con efecto zoom al hacer clic */
+        #startOverlay.fade-out {
+            opacity: 0;
+            transform: scale(1.12);
+            pointer-events: none;
+        }
+
+        /* CONTENEDOR DEL TÍTULO PRINCIPAL */
+        .title-wrapper {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.15rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        /* EFECTO MÁQUINA DE ESCRIBIR: se escribe "KARAOKE PART" con fuente estilizada y menos gruesa */
+        .typing-text {
+            font-size: 5rem !important;
+            font-weight: 600 !important;  /* Semibold más elegante, no tan grueso */
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #ffcc33, #ff66aa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            overflow: hidden; 
+            border-right: 4px solid #ff66aa;
+            white-space: nowrap;
+            width: 0;
+            display: inline-block;
+            /* "KARAOKE PART" = 12 caracteres (K A R A O K E espacio P A R T) */
+            animation: typing 2s steps(12) forwards, 
+                       blink 0.5s step-end infinite alternate,
+                       removeCursor 0.3s forwards 2.5s;
+        }
+        
+        /* Elementos que aparecen después (letra 'Y' y micrófono) para completar "PARTY" */
+        .extra-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            opacity: 0;
+            transform: translateX(-10px);
+            animation: fadeInMove 0.6s ease-out forwards;
+            animation-delay: 2.3s; /* Justo después de terminar el typing y eliminar cursor */
+        }
+        .extra-y {
+            font-size: 5rem !important;
+            font-weight: 600 !important;
+            background: linear-gradient(135deg, #ffcc33, #ff66aa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+            letter-spacing: 2px;
+        }
+        .microphone-icon {
+            font-size: 4.5rem;
+            filter: drop-shadow(0 0 8px #ff66aa);
+            display: inline-block;
+            margin-left: 6px;
+            animation: bounceMic 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+            animation-delay: 2.4s;
+            opacity: 0;
+            transform: scale(0.6);
+        }
+        
+        @keyframes fadeInMove {
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes bounceMic {
+            0% { opacity: 0; transform: scale(0.5) rotate(-15deg); }
+            60% { opacity: 1; transform: scale(1.2) rotate(5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        /* SUBTÍTULO FLOTANTE (más estilizado) */
+        #startOverlay p {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: #f0f0f0;
+            letter-spacing: 1px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease-out forwards;
+            animation-delay: 2.5s;
+            max-width: 80%;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* BOTÓN ESTILO CIBER-NÉON INTERACTIVO */
+        .start-btn-huge {
+            background: rgba(255, 0, 170, 0.15);
+            border: 2px solid #ff00aa;
+            border-radius: 60px;
+            padding: 16px 42px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            cursor: pointer;
+            margin-top: 40px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 0 15px rgba(255, 0, 170, 0.4);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0;
+            animation: 
+                fadeInUp 0.8s ease-out forwards 2.7s,
+                pulseGlow 2s infinite alternate ease-in-out 3.5s;
+        }
+
+        .start-btn-huge:hover {
+            background: #ff00aa;
+            box-shadow: 0 0 30px #ff00aa, 0 0 50px #9b59b6;
+            transform: scale(1.05) translateY(-3px);
+        }
+
+        /* ANIMACIONES PRINCIPALES */
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 12ch; } /* "KARAOKE PART" 12 caracteres */
+        }
+        @keyframes blink {
+            from, to { border-color: transparent; }
+            50% { border-color: #ff66aa; }
+        }
+        @keyframes removeCursor {
+            to { border-right-color: transparent; }
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 15px rgba(255, 0, 170, 0.3); }
+            100% { box-shadow: 0 0 30px rgba(255, 0, 170, 0.7); }
+        }
+
+        /* ---------- MODO CINE (INMERSIVO) ---------- */
+        body.cinema-mode { background: black; }
+        body.cinema-mode .tv-container { padding: 0; max-width: 100%; }
+        body.cinema-mode .qr-area,
+        body.cinema-mode h1,
+        body.cinema-mode .now-playing-card,
+        body.cinema-mode #queueList,
+        body.cinema-mode .magic-btn,
+        body.cinema-mode .btn-danger,
+        body.cinema-mode #nowPlayingInfo {
+            display: none !important;
+        }
+        body.cinema-mode .player-wrapper { margin: 0; padding: 0; }
+        body.cinema-mode #youtubePlayer {
+            height: 100vh !important;
+            width: 100vw !important;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10000;
+        }
+        body.cinema-mode [style*="display: grid"] { display: block !important; }
+
+        /* ---------- BOTONES MAGIC UI (EFECTO MAGNÉTICO) ---------- */
+        .magic-btn {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            border: none;
+            border-radius: 14px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.1) inset;
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            backdrop-filter: blur(4px);
+        }
+        .magic-btn:hover {
+            transform: scale(1.08) translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255,255,255,0.3) inset;
+            filter: brightness(1.1);
+        }
+        .magic-btn:active {
+            transform: scale(0.96) translateY(2px);
+            transition: 0.05s;
+        }
+        #prevBtn { background: linear-gradient(135deg, #3a3a5a, #1f1f3a); }
+        #playBtn { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        #pauseBtn { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        #skipBtn { background: linear-gradient(135deg, #3498db, #2980b9); }
+        #cinemaBtn { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        #clearBtn { background: linear-gradient(135deg, #f39c12, #e67e22); }
+
+        /* ---------- REACCIONES LATERALES ---------- */
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translateY(100vh) scale(0.6) rotate(-10deg); }
+            15% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-20vh) scale(1.2) rotate(10deg); }
+        }
+        .floating-emoji, .floating-sticker {
+            position: fixed;
+            z-index: 99999;
+            pointer-events: none;
+            animation: floatUp 6s ease-out forwards;
+            filter: drop-shadow(0 0 12px rgba(0,0,0,0.6));
+            will-change: transform, opacity;
+        }
+        .floating-emoji {
+            font-size: 70px;
+            text-shadow: 0 0 15px rgba(255,255,200,0.8);
+        }
+        .floating-sticker {
+            max-width: 180px;
+            max-height: 180px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Transición de canción (presentador) */
+        #songTransitionOverlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.96);
+            display: none;
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 20000;
+            text-align: center; padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        #songTransitionOverlay h2 {
+            font-size: 3rem; margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffd89b, #ff6a88);
+            -webkit-background-clip: text; color: transparent;
+        }
+        #songTransitionOverlay h1 {
+            font-size: 4.5rem; line-height: 1.1;
+            background: linear-gradient(135deg, #ffcc33, #ff66aa);
+            -webkit-background-clip: text; color: transparent;
+        }
+        #songTransitionOverlay p { font-size: 1.6rem; color: #ccc; margin-top: 1rem; }
+        
+        .effect-toast {
+            position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            color: white; padding: 12px 24px; border-radius: 40px; font-size: 1rem;
+            z-index: 99998; animation: fadeOut 3s forwards; pointer-events: none;
+            border-left: 5px solid #ffaa00;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateX(0); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(30px); display: none; }
+        }
+
+        /* ---------- RANKING DE LUJO (PODIO + GLASSMORPHISM) ---------- */
+        .ranking-podium {
+            display: flex; justify-content: center; align-items: flex-end;
+            gap: 30px; flex-wrap: wrap; margin: 40px 0;
+        }
+        .podium-card {
+            background: rgba(20, 20, 40, 0.65);
+            backdrop-filter: blur(15px); border-radius: 32px;
+            padding: 20px 25px; text-align: center; min-width: 180px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 20px 35px -15px rgba(0,0,0,0.5);
+        }
+        .podium-card:hover { transform: scale(1.03); background: rgba(40,40,70,0.8); }
+        .winner-card {
+            background: linear-gradient(135deg, #f9d423, #ff4e50);
+            color: #1e1a2f; transform: scale(1.05); border: 2px solid gold; box-shadow: 0 0 35px rgba(255,215,0,0.5);
+        }
+        .second-card { background: linear-gradient(135deg, #e0e0e0, #b0b0b0); color: #1e1a2f; }
+        .third-card { background: linear-gradient(135deg, #cd7f32, #a0522d); color: white; }
+        .podium-icon { font-size: 4rem; margin-bottom: 10px; }
+        .podium-name { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+        .podium-score { font-size: 1.3rem; font-weight: bold; margin-top: 8px; }
+        .rest-list { width: 80%; max-width: 600px; margin-top: 30px; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); border-radius: 28px; padding: 15px 25px; }
+        .rest-item { display: flex; justify-content: space-between; font-size: 1.2rem; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2); }
+        
+        #finalRankingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 30% 10%, #0f0c29, #24243e, #0a0a2a);
+            z-index: 30000; display: none; flex-direction: column; align-items: center;
+            justify-content: center; color: white; overflow-y: auto; padding: 40px 20px;
+        }
+        .close-ranking { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 10px 28px; border-radius: 60px; color: white; font-weight: bold; cursor: pointer; margin-top: 30px; transition: 0.2s; }
+        .close-ranking:hover { background: white; color: black; transform: scale(0.97); }
+        .restart-btn { background: white; color: #1a1a2e; border: none; padding: 12px 30px; border-radius: 60px; font-weight: bold; font-size: 1rem; margin-top: 20px; cursor: pointer; transition: 0.2s; }
+        .restart-btn:hover { transform: scale(1.02); background: #ffd966; }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(0px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(2px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(2px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- OVERLAY DE INICIO PREMIUM: TÍTULO "KARAOKE PARTY" COMPLETO CON ESCRITURA ESTILIZADA -->
+<div id="startOverlay">
+    <div class="title-wrapper">
+        <!-- Se escribe "KARAOKE PART" (12 caracteres) -->
+        <span class="typing-text">KARAOKE PART</span>
+        <!-- Luego aparece la 'Y' + micrófono para completar "PARTY" -->
+        <span class="extra-title">
+            <span class="extra-y">Y</span>
+            <span class="microphone-icon">🎤</span>
+        </span>
+    </div>
+    <p>Escanea el código QR desde tu celular para unirte al show</p>
+    <button class="start-btn-huge" onclick="iniciarKaraoke()">Iniciar Pantalla</button>
+</div>
+
+<!-- OVERLAY DE TRANSICIÓN DE CANCIONES (PRESENTADOR) -->
+<div id="songTransitionOverlay">
+    <h2 id="presenterMessage">🎤 ¡Eso estuvo genial!</h2>
+    <p>👏 Damos la bienvenida a nuestra siguiente estrella:</p>
+    <h1 id="nextStarName">Nombre</h1>
+    <p id="nextSongTitle" style="color: #ddd;">Canción</p>
+</div>
+
+<!-- CONTENEDOR PRINCIPAL DE LA TV -->
+<div class="tv-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+        <h1 style="background: linear-gradient(135deg,#ffcc33,#ff66aa); -webkit-background-clip:text; color:transparent; font-weight:600;">🎤 KARAOKE PARTY</h1>
+        
+        <!-- MARCADOR DE EQUIPOS (MODO DESAFÍO) -->
+        <div style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 10px 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 5px 15px rgba(0,0,0,0.3); min-width: 280px; justify-content: space-around;">
+            <div style="text-align: center;">
+                <h4 style="color: #ff4757; font-size: 11px; letter-spacing: 1px; margin-bottom: 2px;">🔴 ROJO</h4>
+                <span id="scoreRed" style="font-size: 24px; font-weight: 800; color: #ff4757;">0</span>
+            </div>
+            <div style="width: 1px; background: rgba(255,255,255,0.1); align-self: stretch;"></div>
+            <div style="text-align: center;">
+                <h4 style="color: #00d2ff; font-size: 11px; letter-spacing: 1px; margin-bottom: 2px;">🔵 AZUL</h4>
+                <span id="scoreBlue" style="font-size: 24px; font-weight: 800; color: #00d2ff;">0</span>
+            </div>
+        </div>
+
+        <div class="qr-area" style="text-align: center;">
+            <img id="qrImage" alt="QR para unirse" width="110" style="border-radius: 16px; background: white; padding: 5px;">
+            <p style="color:white; font-size:12px; margin-top:5px;">📲 Escanea para unirse</p>
+        </div>
+    </div>
+    <div style="display: grid; gap: 20px; grid-template-columns: auto 2fr 1fr;">
+        <!-- APLAUSÓMETRO VERTICAL (GUITAR HERO STYLE) -->
+        <div style="width: 50px; display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.4); border-radius: 20px; padding: 15px 5px; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; align-self: stretch;">
+            <div style="font-size: 18px; margin-bottom: 10px;">🔥</div>
+            <div style="flex: 1; width: 14px; background: rgba(255,255,255,0.08); border-radius: 10px; position: relative; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; border: 1px solid rgba(255,255,255,0.15);">
+                <div id="applauseMeterBar" style="width: 100%; height: 0%; background: linear-gradient(to top, #ff0055, #ffd700, #00ffff); border-radius: 10px; transition: height 0.3s cubic-bezier(0.1, 0.8, 0.3, 1); box-shadow: 0 0 15px #ffd700;"></div>
+            </div>
+            <div id="applausePercent" style="font-size: 11px; font-weight: bold; margin-top: 10px; color: #ffd700;">0%</div>
+        </div>
+        <div>
+            <div class="player-wrapper" style="border-radius: 24px; overflow: hidden; box-shadow: 0 20px 35px -10px black;">
+                <div id="youtubePlayer" style="width: 100%; aspect-ratio: 16/9; background: black;"></div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                <button class="magic-btn" id="prevBtn">⏮️ Atrás</button>
+                <button class="magic-btn" id="playBtn">▶️ Play</button>
+                <button class="magic-btn" id="pauseBtn">⏸️ Pausa</button>
+                <button class="magic-btn" id="skipBtn">⏭️ Siguiente</button>
+                <button class="magic-btn" id="cinemaBtn">🎬 Modo Cine</button>
+                <button class="magic-btn" id="clearBtn">🧹 Vaciar Cola</button>
+            </div>
+            <div class="now-playing-card" style="margin-top: 20px; background: rgba(255,255,255,0.05); border-radius: 28px; padding: 15px;">
+                <h3>🎵 Ahora suena:</h3>
+                <div id="currentSongDisplay">Esperando canciones...</div>
+            </div>
+        </div>
+        <div>
+            <h3>📋 Siguientes en la cola</h3>
+            <div id="queueList" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
+        </div>
+    </div>
+</div>
+<div id="fullscreenOverlay"></div>
+<div id="finalRankingOverlay">
+    <h1 style="font-size: 3rem; margin-bottom: 10px;">🏆 PODIO KARAOKE 🏆</h1>
+    <div id="podiumContainer" class="ranking-podium"></div>
+    <div id="restRankingContainer" class="rest-list" style="display: none;"></div>
+    <button class="restart-btn" onclick="location.reload()">✨ Reiniciar Fiesta ✨</button>
+    <button class="close-ranking" onclick="document.getElementById('finalRankingOverlay').style.display='none'">Cerrar</button>
+</div>
+
+<!-- WIDGET DEL CHACAL DE LA ZAMPOÑA (CO-ANIMADOR ANDINO) -->
+<div id="chacalWidget" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; display: none; width: 180px; height: 180px; transition: all 0.5s ease-out; pointer-events: none;">
+    <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; filter: drop-shadow(0 0 15px rgba(255,165,0,0.6));">
+        <!-- Chullo (Gorro Altiplánico) -->
+        <path d="M 26 50 C 26 15, 74 15, 74 50 Z" fill="#c0392b" stroke="#ffcc00" stroke-width="2" />
+        <path d="M 30 35 Q 50 25 70 35" fill="none" stroke="#27ae60" stroke-width="4" />
+        <path d="M 27 43 Q 50 33 73 43" fill="none" stroke="#f1c40f" stroke-width="4" />
+        <circle cx="50" cy="18" r="6" fill="#f1c40f" />
+        <path d="M 27 48 L 22 65 L 32 60 Z" fill="#c0392b" stroke="#ffcc00" stroke-width="1" />
+        <circle cx="22" cy="65" r="2" fill="#f1c40f" />
+        <path d="M 73 48 L 78 65 L 68 60 Z" fill="#c0392b" stroke="#ffcc00" stroke-width="1" />
+        <circle cx="78" cy="65" r="2" fill="#f1c40f" />
+        
+        <!-- Cara Oculta del Chacal -->
+        <circle cx="50" cy="52" r="20" fill="#222" />
+        <circle cx="44" cy="50" r="2.5" fill="yellow" />
+        <circle cx="56" cy="50" r="2.5" fill="yellow" />
+        <path d="M 40 46 L 47 48" stroke="#ff0055" stroke-width="2" />
+        <path d="M 60 46 L 53 48" stroke="#ff0055" stroke-width="2" />
+        
+        <!-- Zampoña (Mantiene ID para compatibilidad con la animación de agitación JS) -->
+        <g id="chacalTrumpet" style="transform-origin: 50% 60%; transition: transform 0.2s;">
+            <rect x="36" y="62" width="4" height="25" fill="#d2a679" stroke="#5c3a21" stroke-width="1" />
+            <rect x="41" y="62" width="4" height="22" fill="#d2a679" stroke="#5c3a21" stroke-width="1" />
+            <rect x="46" y="62" width="4" height="19" fill="#d2a679" stroke="#5c3a21" stroke-width="1" />
+            <rect x="51" y="62" width="4" height="16" fill="#d2a679" stroke="#5c3a21" stroke-width="1" />
+            <rect x="56" y="62" width="4" height="13" fill="#d2a679" stroke="#5c3a21" stroke-width="1" />
+            <rect x="61" y="62" width="4" height="10" fill="#d2a679" stroke="#5c3a21" stroke-width="1" />
+            <rect x="34" y="67" width="33" height="3" fill="#8b5a2b" />
+        </g>
+    </svg>
+    <div id="chacalText" style="position: absolute; top: -30px; left: 0; width: 100%; text-align: center; background: rgba(0,0,0,0.85); border: 2px solid #ffcc00; padding: 6px; border-radius: 10px; font-size: 13px; font-weight: bold; color: white; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+        ¡El Chacal de la Zampoña!
+    </div>
+</div>
+
+<script>
+    // ---------- CONEXIÓN SOCKET Y VARIABLES GLOBALES ----------
+    const socket = io({ transports: ['websocket'] });
+    let ytPlayer = null;
+    let currentVideoId = null;
+    let songCounter = 0;
+
+    if (typeof confetti === 'undefined') window.confetti = () => console.log("mock confetti");
+
+    // ---------- FRASES DINÁMICAS (PRESENTADOR) ----------
+    const frasesBienvenida = [
+        "¡Qué increíble presentación! Ahora, con ustedes...",
+        "¡Aplausos para el artista anterior! Sube al escenario...",
+        "¡La fiesta no para! Recibamos a...",
+        "¿Están listos? ¡Con mucha energía, ahora le toca a...",
+        "¡Qué nivel! Cerrando los ojos y disfrutando. Siguiente...",
+        "¡Vamos, vamos! El público pide más. A cantar le toca a...",
+        "¡Excelente! ¿Y ahora con ustedes? ¡Una estrella más!",
+        "La noche sigue y el karaoke no perdona. Bienvenido/a..."
+    ];
+    const frasesEspeciales = [
+        "🎉 ¡Ronda especial! Canción número {num} ¡La gente enloquece!",
+        "🔥 ¡Momentazo! Llevamos {num} canciones, ¡esto es enorme!",
+        "💥 ¡Uf, qué noche! Vamos por la número {num}, ¡no se detengan!"
+    ];
+    const frasesCierre = [
+        "Damos un fuerte aplauso, y ahora...",
+        "¡Bravo! Bravo. A continuación...",
+        "Se nos sube la emoción. Recibamos a..."
+    ];
+    function getRandomFrase(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function getFrasePresentador() {
+        if (songCounter > 0 && songCounter % 3 === 0) {
+            let frase = getRandomFrase(frasesEspeciales);
+            frase = frase.replace("{num}", songCounter);
+            return frase;
+        } else {
+            const tipo = Math.random() < 0.7 ? frasesBienvenida : frasesCierre;
+            return getRandomFrase(tipo);
+        }
+    }
+
+    // ---------- YOUTUBE API Y ARRANQUE SEGURO ----------
+    function iniciarKaraoke() {
+        const overlay = document.getElementById('startOverlay');
+        
+        // Sonido de multitud al inicio (premium)
+        try {
+            const crowdAudio = new Audio('/multitud.wav');
+            crowdAudio.volume = 0.6;
+            crowdAudio.play().catch(err => console.log("Audio multitud bloqueado:", err));
+        } catch(e) { console.log("Error audio"); }
+
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 800);
+        
+        // Lógica original: sintetizador y API de YouTube
+        try {
+            const utterance = new SpeechSynthesisUtterance('');
+            window.speechSynthesis.speak(utterance);
+        } catch (e) {
+            console.log("TTS init blocked or unsupported:", e);
+        }
+        
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
+    }
+
+    function onYouTubeIframeAPIReady() {
+        ytPlayer = new YT.Player('youtubePlayer', {
+            videoId: '',
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0 },
+            events: {
+                'onReady': (e) => { 
+                    e.target.unMute(); 
+                    e.target.setVolume(100); 
+                    if (currentVideoId) ytPlayer.loadVideoById(currentVideoId); 
+                },
+                'onStateChange': (e) => { 
+                    if (e.data === 1) {
+                        e.target.unMute();
+                        e.target.setVolume(100);
+                    }
+                    if (e.data === 0) socket.emit('skip-song'); 
+                },
+                'onError': (e) => {
+                    if ([100, 101, 150].includes(e.data)) {
+                        showEffectNotification('bloqueo', 'Sistema');
+                        setTimeout(() => socket.emit('skip-song'), 4000);
+                    }
+                }
+            }
+        });
+    }
+
+    // Cargar QR desde el servidor
+    fetch('/config').then(r => r.json()).then(d => {
+        if(d.qrImage) document.getElementById('qrImage').src = d.qrImage;
+    }).catch(() => console.log("QR no disponible"));
+
+    // ---------- SOCKET: ESTADO, COLA, CANCIONES ----------
+    socket.on('state-update', (state) => {
+        updateQueue(state.queue);
+        updateNowPlaying(state.currentSong);
+        
+        // Actualizar marcador de equipos
+        if (state.teamScores) {
+            document.getElementById('scoreRed').innerText = state.teamScores.red || 0;
+            document.getElementById('scoreBlue').innerText = state.teamScores.blue || 0;
+        }
+
+        // Actualizar aplausómetro
+        if (state.currentSongClaps !== undefined) {
+            updateApplauseMeter(state.currentSongClaps);
+        }
+
+        // Sincronizar efecto de voz
+        if (state.activeVoiceEffect !== undefined) {
+            currentVoiceEffectName = state.activeVoiceEffect;
+        }
+
+        if (state.currentSong) {
+            const newVideoId = state.currentSong.videoId;
+            if (newVideoId !== currentVideoId) {
+                if (currentVideoId === null) {
+                    currentVideoId = newVideoId;
+                    if (ytPlayer && ytPlayer.loadVideoById) ytPlayer.loadVideoById(currentVideoId);
+                } else {
+                    currentVideoId = newVideoId;
+                    triggerSongTransition(state.currentSong);
+                }
+            }
+        } else {
+            currentVideoId = null;
+            if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+        }
+    });
+
+    function triggerSongTransition(nextSong) {
+        const overlay = document.getElementById('songTransitionOverlay');
+        const presenterMsg = document.getElementById('presenterMessage');
+        const nextStarName = document.getElementById('nextStarName');
+        const nextSongTitle = document.getElementById('nextSongTitle');
+        if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+        songCounter++;
+        let frase = getFrasePresentador();
+        presenterMsg.innerHTML = frase;
+        nextStarName.textContent = nextSong.requester;
+        nextSongTitle.textContent = `🎶 "${nextSong.title}"`;
+        overlay.style.display = 'flex';
+
+        let transitionCleared = false;
+        function clearTransition() {
+            if (transitionCleared) return;
+            transitionCleared = true;
+            overlay.style.display = 'none';
+            if (ytPlayer && ytPlayer.loadVideoById) ytPlayer.loadVideoById(currentVideoId);
+        }
+
+        // Fallback de seguridad de 6 segundos por si falla SpeechSynthesis o se bloquea
+        const fallbackTimeout = setTimeout(clearTransition, 6000);
+
+        try {
+            let textoALeer = `${frase} ${nextSong.requester} con la canción ${nextSong.title}.`;
+            if (frase.includes(nextSong.requester)) textoALeer = frase;
+            const utterance = new SpeechSynthesisUtterance(textoALeer);
+
+            const setVoiceAndSpeak = () => {
+                const voices = window.speechSynthesis.getVoices();
+                utterance.voice = voices.find(v => v.lang === 'es-CL') || voices.find(v => v.lang.startsWith('es'));
+                utterance.pitch = 0.9 + Math.random() * 0.2;
+                utterance.rate = 0.85 + Math.random() * 0.15;
+                utterance.onend = () => {
+                    clearTimeout(fallbackTimeout);
+                    setTimeout(clearTransition, 1000);
+                };
+                utterance.onerror = () => {
+                    clearTimeout(fallbackTimeout);
+                    clearTransition();
+                };
+                window.speechSynthesis.speak(utterance);
+            };
+
+            if (window.speechSynthesis.getVoices().length === 0) {
+                window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+            } else {
+                setVoiceAndSpeak();
+            }
+        } catch (err) {
+            console.error("Speech Synthesis error:", err);
+            clearTimeout(fallbackTimeout);
+            clearTransition();
+        }
+    }
+
+    // ---------- REACCIONES VISUALES ----------
+    function spawnEmoji(emojiChar) {
+        const el = document.createElement('div');
+        el.className = 'floating-emoji';
+        el.textContent = emojiChar;
+        const side = Math.random() < 0.5 ? 'left' : 'right';
+        let leftPercent = side === 'left' ? Math.random() * 15 : 85 + Math.random() * 15;
+        el.style.left = leftPercent + '%';
+        el.style.bottom = '-50px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 6000);
+    }
+
+    function spawnSticker(imgUrl) {
+        const img = document.createElement('img');
+        img.className = 'floating-sticker';
+        img.src = imgUrl;
+        const side = Math.random() < 0.5 ? 'left' : 'right';
+        let leftPercent = side === 'left' ? Math.random() * 12 : 88 + Math.random() * 12;
+        img.style.left = leftPercent + '%';
+        img.style.bottom = '-80px';
+        document.body.appendChild(img);
+        setTimeout(() => img.remove(), 6000);
+    }
+
+    function showEffectNotification(effect, from) {
+        const msg = document.createElement('div');
+        msg.className = 'effect-toast';
+        if (effect === 'bloqueo') msg.innerHTML = "⚠️ Video bloqueado. Saltando...";
+        else msg.innerHTML = `${effect === 'confetti' ? '🎉' : '🎆'} <strong>${escapeHtml(from)}</strong> activó: ${effect}`;
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+    }
+
+    socket.on('effect-triggered', ({ effect, from }) => {
+        const sonidos = { 'ovacion': 'ovacion.mp3', 'aplausos': 'aplausos.wav', 'multitud': 'multitud.wav' };
+        if (sonidos[effect]) {
+            reproducirEfecto(sonidos[effect]);
+        } 
+        else if (effect === 'confetti' || effect === 'fireworks') {
+            showEffectNotification(effect, from);
+            if (effect === 'confetti') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 10000 });
+            if (effect === 'fireworks') confetti({ particleCount: 300, spread: 100, startVelocity: 25, zIndex: 10000 });
+        } 
+        else {
+            spawnEmoji(effect);
+        }
+    });
+
+    socket.on('sticker-received', (stickerUrl) => spawnSticker(stickerUrl));
+
+    // ---------- RANKING FINAL ----------
+    socket.on('show-final-ranking', (data) => {
+        let rankingArray = (data && data.fullRanking) ? data.fullRanking : (Array.isArray(data) ? data : []);
+        if (!rankingArray.length) {
+            document.getElementById('finalRankingOverlay').style.display = 'flex';
+            document.getElementById('podiumContainer').innerHTML = '<p style="grid-column:span 3; text-align:center;">✨ Aún no hay puntuaciones ✨</p>';
+            document.getElementById('restRankingContainer').style.display = 'none';
+            return;
+        }
+        rankingArray.sort((a,b) => b.score - a.score);
+        const top3 = rankingArray.slice(0,3);
+        const rest = rankingArray.slice(3);
+        const podiumDiv = document.getElementById('podiumContainer');
+        podiumDiv.innerHTML = '';
+        const classes = ['winner-card', 'second-card', 'third-card'];
+        const icons = ['👑', '🥈', '🥉'];
+        top3.forEach((user, idx) => {
+            const card = document.createElement('div');
+            card.className = `podium-card ${classes[idx]}`;
+            card.innerHTML = `
+                <div class="podium-icon">${icons[idx]}</div>
+                <div class="podium-name">${escapeHtml(user.name)}</div>
+                <div class="podium-score">🎤 ${user.score} pts</div>
+            `;
+            podiumDiv.appendChild(card);
+        });
+        const restDiv = document.getElementById('restRankingContainer');
+        if (rest.length) {
+            restDiv.style.display = 'block';
+            restDiv.innerHTML = `<h3 style="text-align:center;">🎵 Más participantes 🎵</h3>` +
+                rest.map((user, i) => `<div class="rest-item"><span>${i+4}. ${escapeHtml(user.name)}</span><span>${user.score} pts</span></div>`).join('');
+        } else {
+            restDiv.style.display = 'none';
+        }
+        document.getElementById('finalRankingOverlay').style.display = 'flex';
+        confetti({ particleCount: 600, spread: 180, origin: { y: 0.6 }, zIndex: 30001 });
+        try {
+            const winner = top3[0];
+            const utterance = new SpeechSynthesisUtterance(`¡Felicidades al ganador! ${winner.name} con ${winner.score} puntos.`);
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        } catch (err) {
+            console.error("Speech Synthesis error on podium:", err);
+        }
+    });
+
+    // ---------- UI AUXILIAR ----------
+    function updateQueue(queue) {
+        const container = document.getElementById('queueList');
+        if (!queue || !queue.length) { container.innerHTML = '<p>✨ Cola vacía. ¡Escanea el QR!</p>'; return; }
+        container.innerHTML = queue.map(s => `
+            <div style="display:flex; gap:12px; background:rgba(255,255,255,0.05); margin:10px 0; padding:10px; border-radius:20px; align-items:center;">
+                <img src="${s.thumbnail}" width="60" style="border-radius:12px">
+                <div style="flex:1"><strong>${escapeHtml(s.title)}</strong><br><small>👤 ${escapeHtml(s.requester)}</small></div>
+                <button class="magic-btn" style="background:#c0392b; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>
+            </div>
+        `).join('');
+    }
+    function updateNowPlaying(song) {
+        const container = document.getElementById('currentSongDisplay');
+        if(song) container.innerHTML = `<div style="display:flex; gap:15px;"><img src="${song.thumbnail}" width="80" style="border-radius:12px"><div><h3>${escapeHtml(song.title)}</h3><p>👤 ${escapeHtml(song.requester)}</p></div></div>`;
+        else container.innerHTML = '<p>⏸️ Esperando canciones...</p>';
+    }
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    // Botones de control
+    document.getElementById('playBtn').onclick = () => ytPlayer?.playVideo();
+    document.getElementById('pauseBtn').onclick = () => ytPlayer?.pauseVideo();
+    document.getElementById('prevBtn').onclick = () => socket.emit('prev-song');
+    document.getElementById('skipBtn').onclick = () => socket.emit('skip-song');
+    document.getElementById('clearBtn').onclick = () => { if(confirm('¿Vaciar cola y puntajes?')) socket.emit('clear-queue'); };
+    document.getElementById('cinemaBtn').onclick = () => {
+        const body = document.body;
+        if (!body.classList.contains('cinema-mode')) {
+            body.classList.add('cinema-mode');
+            document.documentElement.requestFullscreen?.() || document.documentElement.webkitRequestFullscreen?.();
+            document.getElementById('cinemaBtn').innerHTML = "🚪 Salir Modo Cine";
+        } else {
+            body.classList.remove('cinema-mode');
+            document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+            document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine";
+        }
+    };
+    document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && !document.webkitFullscreenElement) { document.body.classList.remove('cinema-mode'); document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine"; } });
+    
+    socket.emit('get-state');
+
+    // Sonidos automáticos durante reproducción
+    function reproducirEfecto(nombreArchivo) {
+        const audio = new Audio(`/assets/sounds/${nombreArchivo}`);
+        audio.play().catch(e => console.log("Error audio efecto:", e));
+    }
+
+    setInterval(() => {
+        if (typeof ytPlayer !== 'undefined' && ytPlayer && ytPlayer.getPlayerState) {
+            const state = ytPlayer.getPlayerState();
+            const currentTime = ytPlayer.getCurrentTime();
+            const duration = ytPlayer.getDuration();
+            if (state === 1 && currentTime > 0 && currentTime < 2 && !window.hasStarted) {
+                reproducirEfecto('ovacion.mp3');
+                window.hasStarted = true;
+            }
+            if (state === 1 && duration && (duration - currentTime) < 3 && !window.hasEnded) {
+                reproducirEfecto('aplausos.wav');
+                window.hasEnded = true;
+            }
+            if (state === 1 && currentTime > 10 && duration && (duration - currentTime) > 5) {
+                if (Math.random() < 0.003) reproducirEfecto('multitud.wav');
+            }
+        }
+    }, 1000);
+
+    socket.on('next-song', () => { window.hasStarted = false; window.hasEnded = false; });
+
+    // Invitaciones y dúos
+    socket.on('receive-invitation', ({ fromName }) => {
+        console.log(`${fromName} ha enviado una invitación.`);
+    });
+    socket.on('invitation-accepted', (friendId) => {
+        console.log("¡Dúo aceptado!");
+        if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 10000 });
+    });
+    // Pipeline de Web Audio API para Modulación de Voz en Tiempo Real
+    let audioCtx = null;
+    let mainGainNode = null;
+    let delayNode = null;
+    let feedbackGainNode = null;
+    let currentVoiceEffectName = 'normal'; // 'normal' | 'reverb' | 'helium' | 'monster'
+
+    function initAudioContext() {
+        if (audioCtx) return;
+        
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        mainGainNode = audioCtx.createGain();
+        mainGainNode.gain.value = 1.35; // Refuerzo de volumen del mic
+        
+        // Eco / Delay (karaoke reverb)
+        delayNode = audioCtx.createDelay(1.0);
+        delayNode.delayTime.value = 0.22; // 220ms
+        
+        feedbackGainNode = audioCtx.createGain();
+        feedbackGainNode.gain.value = 0.35; // Retroalimentación
+        
+        delayNode.connect(feedbackGainNode);
+        feedbackGainNode.connect(delayNode);
+        
+        mainGainNode.connect(audioCtx.destination);
+        delayNode.connect(audioCtx.destination);
+    }
+
+    // Audio micrófono en vivo con Web Audio API
+    socket.on('mic-audio', async (audioData) => {
+        try {
+            if (!audioCtx) initAudioContext();
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+
+            // Decodificar el ArrayBuffer recibido
+            audioCtx.decodeAudioData(audioData, (audioBuffer) => {
+                const source = audioCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                
+                let rate = 1.0;
+                let ecoVolume = 0.25;
+                
+                // Aplicar configuraciones de voz
+                if (currentVoiceEffectName === 'reverb') {
+                    rate = 1.0;
+                    ecoVolume = 0.55;
+                    delayNode.delayTime.value = 0.28;
+                } else if (currentVoiceEffectName === 'helium') {
+                    rate = 1.35; // Tono agudo
+                    ecoVolume = 0.2;
+                    delayNode.delayTime.value = 0.15;
+                } else if (currentVoiceEffectName === 'monster') {
+                    rate = 0.76; // Tono grave
+                    ecoVolume = 0.3;
+                    delayNode.delayTime.value = 0.35;
+                } else { // normal
+                    rate = 1.0;
+                    ecoVolume = 0.15;
+                    delayNode.delayTime.value = 0.2;
+                }
+                
+                source.playbackRate.value = rate;
+                feedbackGainNode.gain.value = ecoVolume;
+                
+                source.connect(mainGainNode);
+                source.connect(delayNode);
+                
+                source.start(0);
+            }, (decodeError) => {
+                // Fallback seguro en navegadores que bloqueen decodificación de Opus sueltos
+                playAudioFallback(audioData);
+            });
+        } catch (error) {
+            console.error("Error Web Audio:", error);
+            playAudioFallback(audioData);
+        }
+    });
+
+    function playAudioFallback(audioData) {
+        try {
+            const blob = new Blob([audioData], { type: 'audio/webm;codecs=opus' });
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.volume = 0.9;
+            audio.play().catch(() => {});
+        } catch(e) {}
+    }
+
+    socket.on('voice-effect-changed', ({ effect, by }) => {
+        currentVoiceEffectName = effect;
+        showVoiceFxNotification(effect, by);
+    });
+
+    function showVoiceFxNotification(effect, by) {
+        const msg = document.createElement('div');
+        msg.className = 'effect-toast';
+        msg.style.borderLeft = '5px solid #a777e3';
+        msg.style.background = 'rgba(20, 10, 35, 0.9)';
+        
+        const fxNames = { normal: 'Voz Normal 🎙️', reverb: 'Eco de Concierto ✨', helium: 'Voz de Helio 🎈', monster: 'Voz de Monstruo 👹' };
+        const name = fxNames[effect] || effect;
+        
+        if (effect === 'normal') {
+            msg.innerHTML = `🎙️ Voz restablecida a <strong>Normal</strong>`;
+        } else {
+            msg.innerHTML = `🔮 <strong>${escapeHtml(by)}</strong> activó: <strong style="color: #a777e3;">${name}</strong> en el micrófono`;
+            playBellSound();
+        }
+        
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 4000);
+    }
+
+    // ---------- NUEVOS LISTENERS Y FUNCIONES: APLAUSÓMETRO Y CHACAL ----------
+    let chacalTimeout = null;
+    let isChacalFanActive = false;
+
+    socket.on('applause-update', (data) => {
+        if (data.currentSongClaps !== undefined) {
+            updateApplauseMeter(data.currentSongClaps);
+        }
+        if (data.teamScores) {
+            document.getElementById('scoreRed').innerText = data.teamScores.red || 0;
+            document.getElementById('scoreBlue').innerText = data.teamScores.blue || 0;
+        }
+    });
+
+    socket.on('chacal-voted', ({ voter, voteCount, voteRatio }) => {
+        showChacalDisapproval(voter);
+    });
+
+    socket.on('chacal-overwhelming', ({ voteCount, totalParticipants }) => {
+        showChacalOverwhelming();
+    });
+
+    function updateApplauseMeter(val) {
+        const bar = document.getElementById('applauseMeterBar');
+        const text = document.getElementById('applausePercent');
+        if (bar && text) {
+            bar.style.height = val + '%';
+            text.innerText = val + '%';
+            
+            if (val >= 80) {
+                bar.style.boxShadow = '0 0 25px #ffd700, 0 0 45px #ff0055';
+            } else {
+                bar.style.boxShadow = '0 0 15px #ffd700';
+            }
+        }
+
+        if (val >= 85) {
+            showChacalFan();
+        } else if (val < 80) {
+            hideChacalFan();
+        }
+    }
+
+    function showChacalDisapproval(voterName) {
+        if (isChacalFanActive) return; 
+        
+        const widget = document.getElementById('chacalWidget');
+        const text = document.getElementById('chacalText');
+        const trumpet = document.getElementById('chacalTrumpet');
+        
+        if (!widget || !text) return;
+        
+        widget.style.display = 'block';
+        widget.style.left = '20px';
+        widget.style.bottom = '20px';
+        widget.style.right = 'auto';
+        widget.style.transform = 'scale(1)';
+        
+        text.innerHTML = `⚠️ ¡${escapeHtml(voterName)} desafina! 🪈`;
+        
+        playSyntheticZampogna();
+        
+        let count = 0;
+        const interval = setInterval(() => {
+            if (trumpet) {
+                trumpet.style.transform = `rotate(${count % 2 === 0 ? 12 : -12}deg)`;
+            }
+            count++;
+            if (count > 6) clearInterval(interval);
+        }, 150);
+
+        clearTimeout(chacalTimeout);
+        chacalTimeout = setTimeout(() => {
+            widget.style.display = 'none';
+            if (trumpet) trumpet.style.transform = 'rotate(0deg)';
+        }, 3000);
+    }
+
+    function showChacalOverwhelming() {
+        const widget = document.getElementById('chacalWidget');
+        const text = document.getElementById('chacalText');
+        
+        if (!widget || !text) return;
+        
+        if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+
+        widget.style.display = 'block';
+        widget.style.left = '50%';
+        widget.style.bottom = '50%';
+        widget.style.transform = 'translate(-50%, 50%) scale(2.2)';
+        
+        text.innerHTML = `🚨 ¡Y FUEEERA! 🚨`;
+        
+        playSyntheticZampogna();
+        setTimeout(playYFueraSound, 300);
+
+        document.body.style.animation = 'shake 0.5s infinite';
+        
+        clearTimeout(chacalTimeout);
+        chacalTimeout = setTimeout(() => {
+            widget.style.display = 'none';
+            document.body.style.animation = 'none';
+            if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+        }, 5000);
+    }
+
+    function showChacalFan() {
+        if (isChacalFanActive) return;
+        isChacalFanActive = true;
+        
+        const widget = document.getElementById('chacalWidget');
+        const text = document.getElementById('chacalText');
+        
+        if (!widget || !text) return;
+        
+        widget.style.display = 'block';
+        widget.style.left = 'auto';
+        widget.style.right = '20px';
+        widget.style.bottom = '20px';
+        widget.style.transform = 'scale(1)';
+        
+        text.innerHTML = `🌟 ¡Eso! 10 / 10 🔥`;
+        text.style.borderColor = '#ffd700';
+        
+        playBellSound();
+    }
+
+    function hideChacalFan() {
+        if (!isChacalFanActive) return;
+        isChacalFanActive = false;
+        const widget = document.getElementById('chacalWidget');
+        const text = document.getElementById('chacalText');
+        if (widget) widget.style.display = 'none';
+        if (text) text.style.borderColor = '#ffcc00'; 
+    }
+
+    function playSyntheticZampogna() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            // Onda triangular para simular flauta/zampoña desafinada
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(330, ctx.currentTime); // Mi4
+            osc.frequency.linearRampToValueAtTime(261, ctx.currentTime + 1.2); // Caída a Do4 desafinado
+            
+            gain.gain.setValueAtTime(0, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.15);
+            gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.8);
+            gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
+            
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 800; // Suaviza los armónicos
+            
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 1.2);
+        } catch (e) {
+            console.error("Web Audio API failed:", e);
+        }
+    }
+
+    function playYFueraSound() {
+        const audio = new Audio('/assets/sounds/y_fuera.mp3');
+        audio.play().catch(() => {
+            try {
+                const utterance = new SpeechSynthesisUtterance("¡Y fuera! ¡Y fuera! ¡Y fuera!");
+                utterance.rate = 1.25;
+                utterance.pitch = 0.6;
+                window.speechSynthesis.speak(utterance);
+            } catch(e) {}
+        });
+    }
+
+    function playBellSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.15);
+            osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.4);
+            
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.5);
+        } catch (e) {}
+    }
+</script>
+</body>
+</html>

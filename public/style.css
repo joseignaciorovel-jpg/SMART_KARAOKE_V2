@@ -1,0 +1,36 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a1a; color: #eee; }
+h1, h2, h3 { background: linear-gradient(135deg, #ff66aa, #ffcc33); -webkit-background-clip: text; color: transparent; margin-bottom: 0.5rem; }
+button { transition: transform 0.1s ease, background 0.2s; cursor: pointer; border: none; }
+button:active { transform: scale(0.97); }
+
+.tv-container { max-width: 1400px; margin: 0 auto; padding: 20px; min-height: 100vh; }
+.player-wrapper { background: #000; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); aspect-ratio: 16/9; }
+.qr-area { background: white; border-radius: 20px; padding: 15px; text-align: center; }
+.now-playing-card { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-top: 20px; }
+.queue-item { background: rgba(255,255,255,0.05); margin: 8px 0; padding: 12px; border-radius: 12px; display: flex; gap: 10px; align-items: center; }
+.btn-primary { background: #ff0055; color: white; padding: 8px 16px; border-radius: 30px; font-weight: bold; }
+.btn-danger { background: #444; color: white; padding: 8px 16px; border-radius: 30px; }
+
+/* MAGIA: Capa Transparente para Efectos */
+#fullscreenOverlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none; /* Deja pasar los clics hacia el video */
+    z-index: 9999;
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end;
+    padding: 30px;
+}
+
+@keyframes slideUpFade {
+    0% { opacity: 0; transform: translateY(50px); }
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-50px); }
+}
+.effect-toast {
+    background: linear-gradient(135deg, #ff00aa, #ff5500);
+    color: white; padding: 12px 24px; border-radius: 50px; margin-top: 10px;
+    font-weight: bold; font-size: 18px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    animation: slideUpFade 3s forwards;
+}
