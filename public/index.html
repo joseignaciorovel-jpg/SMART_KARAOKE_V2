@@ -35,7 +35,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(rgba(10, 10, 42, 0.75), rgba(10, 10, 42, 0.85)), url('concierto');
+            background: linear-gradient(rgba(10, 10, 42, 0.75), rgba(10, 10, 42, 0.85)), url('/assets/sounds/concierto.webp');
             background-size: cover;
             background-position: center;
             backdrop-filter: blur(5px);
@@ -542,7 +542,7 @@
         
         // Sonido de multitud al inicio (premium)
         try {
-            const crowdAudio = new Audio('/multitud.wav');
+            const crowdAudio = new Audio('/assets/sounds/multitud.wav');
             crowdAudio.volume = 0.6;
             crowdAudio.play().catch(err => console.log("Audio multitud bloqueado:", err));
         } catch(e) { console.log("Error audio"); }
@@ -568,7 +568,7 @@
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('youtubePlayer', {
             videoId: '',
-            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0 },
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0,'origin': 'https://firevoice.up.railway.app' },
             events: {
                 'onReady': (e) => { 
                     e.target.unMute(); 
