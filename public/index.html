@@ -35,7 +35,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(rgba(10, 10, 42, 0.75), rgba(10, 10, 42, 0.85)), url('concierto');
+            background: linear-gradient(rgba(10, 10, 42, 0.75), rgba(10, 10, 42, 0.85)), url('concierto.jpg');
             background-size: cover;
             background-position: center;
             backdrop-filter: blur(5px);
@@ -568,7 +568,7 @@
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('youtubePlayer', {
             videoId: '',
-            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0 },
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0,'origin': 'https://firevoice.up.railway.app'},
             events: {
                 'onReady': (e) => { 
                     e.target.unMute(); 
