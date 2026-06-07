@@ -894,68 +894,43 @@
         delayNode.connect(audioCtx.destination);
     }
 
-    // Audio micrófono en vivo con Web Audio API
-    socket.on('mic-audio', async (audioData) => {
-        try {
-            if (!audioCtx) initAudioContext();
-            if (audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
+   // --- NUEVO MANEJO DEL MICRÓFONO EN VIVO (STREAMING) ---
+    let micAudioElement = null;
+    let mediaSource = null;
+    let sourceBuffer = null;
+    let audioQueue = [];
 
-            // Decodificar el ArrayBuffer recibido
-            audioCtx.decodeAudioData(audioData, (audioBuffer) => {
-                const source = audioCtx.createBufferSource();
-                source.buffer = audioBuffer;
-                
-                let rate = 1.0;
-                let ecoVolume = 0.25;
-                
-                // Aplicar configuraciones de voz
-                if (currentVoiceEffectName === 'reverb') {
-                    rate = 1.0;
-                    ecoVolume = 0.55;
-                    delayNode.delayTime.value = 0.28;
-                } else if (currentVoiceEffectName === 'helium') {
-                    rate = 1.35; // Tono agudo
-                    ecoVolume = 0.2;
-                    delayNode.delayTime.value = 0.15;
-                } else if (currentVoiceEffectName === 'monster') {
-                    rate = 0.76; // Tono grave
-                    ecoVolume = 0.3;
-                    delayNode.delayTime.value = 0.35;
-                } else { // normal
-                    rate = 1.0;
-                    ecoVolume = 0.15;
-                    delayNode.delayTime.value = 0.2;
-                }
-                
-                source.playbackRate.value = rate;
-                feedbackGainNode.gain.value = ecoVolume;
-                
-                source.connect(mainGainNode);
-                source.connect(delayNode);
-                
-                source.start(0);
-            }, (decodeError) => {
-                // Fallback seguro en navegadores que bloqueen decodificación de Opus sueltos
-                playAudioFallback(audioData);
+    socket.on('mic-audio', async (audioData) => {
+        if (!audioCtx) initAudioContext();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+        if (!micAudioElement) {
+            micAudioElement = new Audio();
+            mediaSource = new MediaSource();
+            micAudioElement.src = URL.createObjectURL(mediaSource);
+
+            const track = audioCtx.createMediaElementSource(micAudioElement);
+            track.connect(mainGainNode);
+            track.connect(delayNode);
+
+            mediaSource.addEventListener('sourceopen', () => {
+                sourceBuffer = mediaSource.addSourceBuffer('audio/webm; codecs="opus"');
+                sourceBuffer.addEventListener('updateend', () => {
+                    if (audioQueue.length > 0 && !sourceBuffer.updating) {
+                        sourceBuffer.appendBuffer(audioQueue.shift());
+                    }
+                });
             });
-        } catch (error) {
-            console.error("Error Web Audio:", error);
-            playAudioFallback(audioData);
+            micAudioElement.play().catch(e => console.log("Click en pantalla requerido"));
+        }
+
+        if (sourceBuffer && !sourceBuffer.updating && audioQueue.length === 0) {
+            sourceBuffer.appendBuffer(new Uint8Array(audioData));
+        } else {
+            audioQueue.push(new Uint8Array(audioData));
         }
     });
-
-    function playAudioFallback(audioData) {
-        try {
-            const blob = new Blob([audioData], { type: 'audio/webm;codecs=opus' });
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
-            audio.volume = 0.9;
-            audio.play().catch(() => {});
-        } catch(e) {}
-    }
-
+    
     socket.on('voice-effect-changed', ({ effect, by }) => {
         currentVoiceEffectName = effect;
         showVoiceFxNotification(effect, by);
