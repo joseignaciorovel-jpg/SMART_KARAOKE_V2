@@ -5,7 +5,7 @@ button { transition: transform 0.1s ease, background 0.2s; cursor: pointer; bord
 button:active { transform: scale(0.97); }
 
 .tv-container { max-width: 1400px; margin: 0 auto; padding: 20px; min-height: 100vh; }
-.player-wrapper { background: #000; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); aspect-ratio: 16/9; }
+.player-wrapper { background: #000; border-radius: 20px; overflow: visible; box-shadow: 0 20px 40px rgba(0,0,0,0.5); aspect-ratio: 16/9; }
 .qr-area { background: white; border-radius: 20px; padding: 15px; text-align: center; }
 .now-playing-card { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-top: 20px; }
 .queue-item { background: rgba(255,255,255,0.05); margin: 8px 0; padding: 12px; border-radius: 12px; display: flex; gap: 10px; align-items: center; }
