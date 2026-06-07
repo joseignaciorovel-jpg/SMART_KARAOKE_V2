@@ -160,3 +160,43 @@ button:active { transform: scale(0.97); }
     background: rgba(255, 255, 255, 0.15); /* Efecto hover sutil */
     transform: scale(1.1);
 }
+/* Contenedor que "abraza" al reproductor */
+.video-and-meter-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    max-width: 1400px;
+}
+
+/* Barra de reacciones flotante y minimalista */
+#applauseMeterContainer {
+    position: absolute;
+    left: -40px; /* Se sale un poco del marco para ser discreta */
+    top: 0;
+    bottom: 0;
+    width: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10; /* Encima del video */
+    padding: 10px 0;
+}
+
+/* Ajuste automático de la barra interna */
+#applauseMeterBar {
+    width: 8px !important;
+    height: 100% !important; /* Se estira al tamaño total del reproductor */
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* El relleno de la barra */
+#applauseFill {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: linear-gradient(to top, #ff0055, #ffcc33);
+    transition: height 0.3s ease;
+}
