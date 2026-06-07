@@ -47,3 +47,41 @@ button:active { transform: scale(0.97); }
     letter-spacing: 0.5px;
     pointer-events: none;
 }
+
+/* --- Mejora integral de la zona QR (Agrandado y con animación de pulso) --- */
+.qr-area {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    transition: all 0.3s ease;
+    animation: pulseQR 3s infinite ease-in-out;
+}
+
+/* Tamaño aumentado del QR */
+.qr-area img {
+    width: 180px; 
+    height: 180px;
+    border-radius: 16px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Texto de instrucción en dorado brillante */
+.qr-area p {
+    color: #ffcc33; 
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-shadow: 0 0 10px rgba(255, 204, 51, 0.4);
+}
+
+/* Definición de la animación de pulso */
+@keyframes pulseQR {
+    0%, 100% { transform: scale(1); border-color: rgba(255, 255, 255, 0.1); }
+    50% { transform: scale(1.05); border-color: rgba(255, 204, 51, 0.6); }
+}
