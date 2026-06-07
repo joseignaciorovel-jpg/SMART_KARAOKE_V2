@@ -85,3 +85,44 @@ button:active { transform: scale(0.97); }
     0%, 100% { transform: scale(1); border-color: rgba(255, 255, 255, 0.1); }
     50% { transform: scale(1.05); border-color: rgba(255, 204, 51, 0.6); }
 }
+
+/* --- Área de Cola Estilizada (Magic UI) --- */
+#queueList {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    transition: all 0.4s ease;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    min-height: 300px;
+}
+
+.empty-queue-msg {
+    text-align: center;
+    padding: 60px 20px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #ffcc33, #ff66aa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: pulseText 2s infinite ease-in-out;
+}
+
+@keyframes pulseText {
+    0%, 100% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.02); }
+}
+
+/* Mejora los items cuando hay canciones */
+.queue-item {
+    background: rgba(255, 255, 255, 0.05);
+    margin: 10px 0;
+    padding: 12px;
+    border-radius: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
