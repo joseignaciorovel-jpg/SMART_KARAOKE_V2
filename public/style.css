@@ -168,65 +168,49 @@ button:active { transform: scale(0.97); }
     max-width: 1400px;
 }
 
-/* Barra de reacciones flotante y minimalista */
+/* --- Contenedor Maestro (El 'ancla' del video) --- */
+.player-wrapper {
+    position: relative; /* ¡Clave! Permite que la barra flote encima */
+    width: 100%;
+    max-width: 900px;
+    aspect-ratio: 16/9;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    background: #000;
+}
+
+/* --- Aplausómetro Superpuesto (Minimalista) --- */
 #applauseMeterContainer {
     position: absolute;
-    left: -40px; /* Se sale un poco del marco para ser discreta */
-    top: 0;
-    bottom: 0;
-    width: 30px;
+    left: 15px; /* Margen interno izquierdo */
+    top: 20px;
+    bottom: 20px;
+    width: 25px;
+    z-index: 20; /* Flota sobre el video */
     display: flex;
     flex-direction: column;
     align-items: center;
-    z-index: 10; /* Encima del video */
-    padding: 10px 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 8px 5px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Ajuste automático de la barra interna */
 #applauseMeterBar {
-    width: 8px !important;
-    height: 100% !important; /* Se estira al tamaño total del reproductor */
-    border-radius: 4px;
+    width: 8px;
+    flex: 1; /* Se estira para llenar el alto del contenedor */
     background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
     position: relative;
     overflow: hidden;
 }
 
-/* El relleno de la barra */
 #applauseFill {
     position: absolute;
     bottom: 0;
     width: 100%;
     background: linear-gradient(to top, #ff0055, #ffcc33);
-    transition: height 0.3s ease;
-}
-/* --- Contenedor Maestro de Video y Barra --- */
-.video-and-meter-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: stretch; /* Esto hace que la barra y el video tengan la misma altura */
-    gap: 20px;
-    margin-top: 20px;
-}
-
-/* --- Barra de Aplausos (Aplausómetro) --- */
-#applauseMeterContainer {
-    width: 50px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 20px;
-    padding: 15px 5px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* --- Reproductor de Video --- */
-.player-wrapper {
-    flex: 1; /* Esto hace que el video ocupe el espacio restante */
-    max-width: 900px;
-    border-radius: 24px;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-    background: #000;
+    transition: height 0.1s ease; /* Transición rápida para dinamismo */
 }
