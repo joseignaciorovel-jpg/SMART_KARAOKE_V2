@@ -126,3 +126,38 @@ button:active { transform: scale(0.97); }
     align-items: center;
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
+/* --- Botonera Estilo YouTube --- */
+.controls-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+    background: rgba(0, 0, 0, 0.4); /* Fondo oscuro semitransparente */
+    backdrop-filter: blur(10px);    /* Efecto cristal */
+    padding: 10px 20px;
+    border-radius: 40px;            /* Forma redondeada estilo YouTube */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: fit-content;             /* Se ajusta al ancho de los botones */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.magic-btn {
+    background: transparent;        /* Fondo transparente para que el cristal brille */
+    color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.magic-btn:hover {
+    background: rgba(255, 255, 255, 0.15); /* Efecto hover sutil */
+    transform: scale(1.1);
+}
