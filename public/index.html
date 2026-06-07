@@ -793,17 +793,29 @@
     });
 
     // ---------- UI AUXILIAR ----------
-    function updateQueue(queue) {
-        const container = document.getElementById('queueList');
-        if (!queue || !queue.length) { container.innerHTML = '<p>✨ Cola vacía. ¡Escanea el QR!</p>'; return; }
-        container.innerHTML = queue.map(s => `
-            <div style="display:flex; gap:12px; background:rgba(255,255,255,0.05); margin:10px 0; padding:10px; border-radius:20px; align-items:center;">
-                <img src="${s.thumbnail}" width="60" style="border-radius:12px">
-                <div style="flex:1"><strong>${escapeHtml(s.title)}</strong><br><small>👤 ${escapeHtml(s.requester)}</small></div>
-                <button class="magic-btn" style="background:#c0392b; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>
-            </div>
-        `).join('');
+  function updateQueue(queue) {
+    const container = document.getElementById('queueList');
+    
+    if (!queue || !queue.length) { 
+        container.innerHTML = `
+            <div class="empty-queue-msg">
+                ✨ ¡LA PISTA ES TODA TUYA! ✨ <br>
+                <span style="font-size: 1rem; color: #fff; margin-top: 10px; display: block;">Sé el primero en cantar</span>
+            </div>`; 
+        return; 
     }
+
+    container.innerHTML = queue.map(s => `
+        <div class="queue-item">
+            <img src="${s.thumbnail}" width="60" style="border-radius:12px">
+            <div style="flex:1">
+                <strong>${escapeHtml(s.title)}</strong><br>
+                <small style="opacity: 0.7;">👤 ${escapeHtml(s.requester)}</small>
+            </div>
+            <button class="magic-btn" style="background:#ff4757; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>
+        </div>
+    `).join('');
+}
     function updateNowPlaying(song) {
         const container = document.getElementById('currentSongDisplay');
         if(song) container.innerHTML = `<div style="display:flex; gap:15px;"><img src="${song.thumbnail}" width="80" style="border-radius:12px"><div><h3>${escapeHtml(song.title)}</h3><p>👤 ${escapeHtml(song.requester)}</p></div></div>`;
