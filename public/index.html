@@ -636,7 +636,7 @@
         }
     });
 
-    function triggerSongTransition(nextSong) {
+        function triggerSongTransition(nextSong) {
         const overlay = document.getElementById('songTransitionOverlay');
         const presenterMsg = document.getElementById('presenterMessage');
         const nextStarName = document.getElementById('nextStarName');
@@ -710,7 +710,7 @@
                 clearTransition();
             }
         });
-    }
+    } // <--- Esta es la llave que faltaba para cerrar la función principal
 
     // ---------- REACCIONES VISUALES ----------
     function spawnEmoji(emojiChar) {
