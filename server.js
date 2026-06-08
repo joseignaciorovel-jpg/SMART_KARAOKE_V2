@@ -31,6 +31,51 @@ app.get('/api/giphy', async (req, res) => {
     }
 });
 
+// ------------------------------------------------------------------
+// 👇 DESDE AQUÍ: PEGA ESTO NUEVO (APROXIMADAMENTE EN LA LÍNEA 35) 👇
+// ------------------------------------------------------------------
+
+// Nuevo endpoint para la voz del presentador con ElevenLabs
+app.post('/api/hablar', async (req, res) => {
+    const texto = req.body.texto;
+    
+    // Aquí es donde llama a las variables ocultas que pondrás en Railway
+    const apiKey = process.env.ELEVEN_API_KEY; 
+    
+    // Si tienes el ID de la voz, ponlo entre las comillas simples, si no, déjalo así para usar una variable en Railway
+    const voiceId = process.env.ELEVEN_VOICE_ID || 'pNInz6obbf5pNzyflT4L'; 
+
+    try {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+            method: 'POST',
+            headers: {
+                'xi-api-key': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: texto,
+                model_id: 'eleven_multilingual_v2', // Vital para que hable buen español
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error de ElevenLabs: ${response.status} ${response.statusText}`);
+        }
+
+        const audioBuffer = await response.arrayBuffer();
+        res.set('Content-Type', 'audio/mpeg');
+        res.send(Buffer.from(audioBuffer));
+
+    } catch (error) {
+        console.error("Fallo el audio premium de ElevenLabs:", error.message);
+        res.status(500).json({ error: "Fallo la síntesis" }); 
+    }
+});
+
+// ------------------------------------------------------------------
+// 👆 HASTA AQUÍ LO NUEVO 👆
+// ------------------------------------------------------------------
+
 let queue = [];
 let history = [];
 let currentSong = null;
