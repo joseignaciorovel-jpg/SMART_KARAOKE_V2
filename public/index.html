@@ -660,16 +660,41 @@
         // Fallback de seguridad de 6 segundos por si falla SpeechSynthesis o se bloquea
         const fallbackTimeout = setTimeout(clearTransition, 6000);
 
-        try {
-            let textoALeer = `${frase} ${nextSong.requester} con la canción ${nextSong.title}.`;
-            if (frase.includes(nextSong.requester)) textoALeer = frase;
-            const utterance = new SpeechSynthesisUtterance(textoALeer);
+        let textoALeer = `${frase} ${nextSong.requester} con la canción ${nextSong.title}.`;
+        if (frase.includes(nextSong.requester)) textoALeer = frase;
 
-            const setVoiceAndSpeak = () => {
+        // INTENTO 1: Pedirle el audio premium a tu server.js
+        fetch('/api/hablar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texto: textoALeer })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("ElevenLabs falló, pasando a plan B");
+            return response.blob();
+        })
+        .then(blob => {
+            // Si funcionó, reproducimos la voz humana
+            const audioUrl = URL.createObjectURL(blob);
+            const audioPremium = new Audio(audioUrl);
+            
+            audioPremium.onended = () => {
+                clearTimeout(fallbackTimeout);
+                setTimeout(clearTransition, 1000);
+            };
+            audioPremium.play().catch(e => { throw new Error("Navegador bloqueó el autoplay del audio"); });
+        })
+        .catch(err => {
+            console.log("Activando voz robótica secundaria...", err.message);
+            
+            // INTENTO 2 (PLAN B): Usar la voz nativa que ya tenías programada
+            try {
+                const utterance = new SpeechSynthesisUtterance(textoALeer);
                 const voices = window.speechSynthesis.getVoices();
                 utterance.voice = voices.find(v => v.lang === 'es-CL') || voices.find(v => v.lang.startsWith('es'));
                 utterance.pitch = 0.9 + Math.random() * 0.2;
                 utterance.rate = 0.85 + Math.random() * 0.15;
+                
                 utterance.onend = () => {
                     clearTimeout(fallbackTimeout);
                     setTimeout(clearTransition, 1000);
@@ -679,19 +704,12 @@
                     clearTransition();
                 };
                 window.speechSynthesis.speak(utterance);
-            };
-
-            if (window.speechSynthesis.getVoices().length === 0) {
-                window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
-            } else {
-                setVoiceAndSpeak();
+            } catch (fallbackErr) {
+                console.error("Ambas voces fallaron:", fallbackErr);
+                clearTimeout(fallbackTimeout);
+                clearTransition();
             }
-        } catch (err) {
-            console.error("Speech Synthesis error:", err);
-            clearTimeout(fallbackTimeout);
-            clearTransition();
-        }
-    }
+        });
 
     // ---------- REACCIONES VISUALES ----------
     function spawnEmoji(emojiChar) {
