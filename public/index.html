@@ -915,18 +915,78 @@
     document.getElementById('prevBtn').onclick = () => socket.emit('prev-song');
     document.getElementById('skipBtn').onclick = () => socket.emit('skip-song');
     document.getElementById('clearBtn').onclick = () => { if(confirm('¿Vaciar cola y puntajes?')) socket.emit('clear-queue'); };
-    document.getElementById('cinemaBtn').onclick = () => {
-        const body = document.body;
-        if (!body.classList.contains('cinema-mode')) {
-            body.classList.add('cinema-mode');
-            document.documentElement.requestFullscreen?.() || document.documentElement.webkitRequestFullscreen?.();
-            document.getElementById('cinemaBtn').innerHTML = "🚪 Salir Modo Cine";
-        } else {
-            body.classList.remove('cinema-mode');
-            document.exitFullscreen?.() || document.webkitExitFullscreen?.();
-            document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine";
-        }
-    };
+    
+// --- MODO CINE CON REUBICACIÓN DE BARRA Y STATS ---
+let originalBarContainer = null;
+let originalStatsContainer = null;
+
+function moveToCinemaMode() {
+    const slimWrapper = document.querySelector('.slim-vertical-wrapper');
+    const statsSlim = document.querySelector('.stats-slim');
+    if (!slimWrapper || !statsSlim) return;
+
+    originalBarContainer = slimWrapper.parentNode;
+    originalStatsContainer = statsSlim.parentNode;
+
+    let cinemaOverlay = document.getElementById('cinemaOverlay');
+    if (!cinemaOverlay) {
+        cinemaOverlay = document.createElement('div');
+        cinemaOverlay.id = 'cinemaOverlay';
+        cinemaOverlay.style.position = 'fixed';
+        cinemaOverlay.style.top = '0';
+        cinemaOverlay.style.left = '0';
+        cinemaOverlay.style.width = '100%';
+        cinemaOverlay.style.height = '100%';
+        cinemaOverlay.style.pointerEvents = 'none';
+        cinemaOverlay.style.zIndex = '10001';
+        document.body.appendChild(cinemaOverlay);
+    }
+    cinemaOverlay.appendChild(slimWrapper);
+    cinemaOverlay.appendChild(statsSlim);
+    slimWrapper.style.position = 'absolute';
+    slimWrapper.style.left = '20px';
+    slimWrapper.style.top = '50%';
+    slimWrapper.style.transform = 'translateY(-50%)';
+    statsSlim.style.position = 'absolute';
+    statsSlim.style.bottom = '20px';
+    statsSlim.style.left = '20px';
+    statsSlim.style.transform = 'none';
+}
+
+function restoreFromCinemaMode() {
+    const slimWrapper = document.querySelector('.slim-vertical-wrapper');
+    const statsSlim = document.querySelector('.stats-slim');
+    const cinemaOverlay = document.getElementById('cinemaOverlay');
+    if (!slimWrapper || !statsSlim || !cinemaOverlay) return;
+
+    slimWrapper.style.position = '';
+    slimWrapper.style.left = '';
+    slimWrapper.style.top = '';
+    slimWrapper.style.transform = '';
+    statsSlim.style.position = '';
+    statsSlim.style.bottom = '';
+    statsSlim.style.left = '';
+    statsSlim.style.transform = '';
+
+    if (originalBarContainer) originalBarContainer.appendChild(slimWrapper);
+    if (originalStatsContainer) originalStatsContainer.appendChild(statsSlim);
+    cinemaOverlay.remove();
+}
+
+document.getElementById('cinemaBtn').onclick = () => {
+    const body = document.body;
+    if (!body.classList.contains('cinema-mode')) {
+        body.classList.add('cinema-mode');
+        document.documentElement.requestFullscreen?.() || document.documentElement.webkitRequestFullscreen?.();
+        document.getElementById('cinemaBtn').innerHTML = "🚪 Salir Modo Cine";
+        moveToCinemaMode();
+    } else {
+        body.classList.remove('cinema-mode');
+        document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+        document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine";
+        restoreFromCinemaMode();
+    }
+};
     document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && !document.webkitFullscreenElement) { document.body.classList.remove('cinema-mode'); document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine"; } });
     
     socket.emit('get-state');
