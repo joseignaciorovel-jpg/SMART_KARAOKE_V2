@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>FireVoice - Mando Karaoke</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥🎤</text></svg>">
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * {
@@ -13,27 +12,15 @@
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
-
         body {
             background: #0B0B12;
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
             color: #F0F0F4;
             padding: 20px 16px 80px;
-            transition: background 0.2s ease;
-        }
-
-        /* Header con identidad */
-        .app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 24px;
-            padding: 0 4px;
         }
         .logo {
-            font-size: 1.7rem;
+            font-size: 1.8rem;
             font-weight: 800;
-            letter-spacing: -0.5px;
             background: linear-gradient(135deg, #FFB347, #FF6B6B);
             background-clip: text;
             -webkit-background-clip: text;
@@ -41,22 +28,10 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            margin-bottom: 20px;
         }
-        .logo span {
-            font-size: 1.8rem;
-        }
-        .team-badge {
-            background: rgba(255,255,255,0.1);
-            border-radius: 30px;
-            padding: 5px 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        /* Tarjeta de puntuación de equipos */
         .scoreboard {
             background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(8px);
             border-radius: 60px;
             padding: 12px 20px;
             margin-bottom: 20px;
@@ -65,428 +40,184 @@
             align-items: center;
             border: 1px solid rgba(255,255,255,0.1);
         }
-        .team-score {
-            text-align: center;
-            flex: 1;
-        }
-        .team-score .team-name {
-            font-weight: 600;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
-        }
-        .team-score .points {
-            font-size: 1.8rem;
-            font-weight: 800;
-            line-height: 1;
-        }
-        .red-score .points { color: #ff5773; text-shadow: 0 0 6px #ff5773; }
-        .blue-score .points { color: #3b82f6; text-shadow: 0 0 6px #3b82f6; }
-        .vs-divider {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: #aaa;
-            padding: 0 8px;
-        }
-
-        /* Collapsible sections (igual que antes) */
-        .card {
-            background: rgba(18, 18, 28, 0.85);
-            backdrop-filter: blur(12px);
-            border-radius: 32px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
+        .team-score { text-align: center; flex: 1; }
+        .team-score .points { font-size: 1.8rem; font-weight: 800; }
+        .red-score .points { color: #ff5773; }
+        .blue-score .points { color: #3b82f6; }
+        .vs-divider { padding: 0 8px; color: #aaa; }
         .collapsible-section {
             border-radius: 28px;
             background: rgba(12, 12, 20, 0.6);
             margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
         }
-
         .section-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding: 18px 20px;
-            background: rgba(25, 25, 38, 0.7);
+            background: rgba(25,25,38,0.7);
             cursor: pointer;
             font-weight: 600;
-            font-size: 1.1rem;
         }
-        .section-header:active { background: rgba(45, 45, 65, 0.8); }
-        .chevron { transition: transform 0.25s ease; opacity: 0.7; }
+        .section-content { padding: 0 20px 20px 20px; }
         .collapsible-section.collapsed .section-content { display: none; }
         .collapsible-section.collapsed .chevron { transform: rotate(-90deg); }
-        .section-content { padding: 0 20px 20px 20px; }
-
-        /* Botones y inputs */
+        .chevron { transition: 0.25s; }
         .btn-full {
             width: 100%;
-            padding: 14px 12px;
+            padding: 14px;
             border-radius: 60px;
-            font-size: 1rem;
             font-weight: 600;
             border: none;
             background: #2C2C3E;
             color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
             margin-bottom: 12px;
-        }
-        .btn-full:active { transform: scale(0.97); background: #3a3a50; }
-        .btn-primary { background: #5271FF; box-shadow: 0 2px 8px rgba(82,113,255,0.2); }
-        .btn-danger { background: #e34d4d; }
-        .btn-success { background: #2BAE6A; }
-        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 14px 18px;
-            border-radius: 60px;
-            border: 1px solid rgba(255,255,255,0.15);
-            background: #111118;
-            color: white;
-            font-size: 1rem;
-            margin-bottom: 14px;
-        }
-        input[type="text"]:focus { outline: none; border-color: #5271FF; background: #181824; }
-
-        .effects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
-            gap: 12px;
-            margin: 8px 0 4px;
-        }
-        .effect-btn {
-            background: #1F1F2C;
-            border: none;
-            font-size: 28px;
-            padding: 12px 0;
-            border-radius: 48px;
             cursor: pointer;
-            transition: 0.1s;
         }
-        .effect-btn:active { transform: scale(0.92); background: #2d2d40; }
-
-        .giphy-results {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            max-height: 220px;
-            overflow-y: auto;
-            margin-top: 12px;
-        }
-        .giphy-sticker { width: 100%; border-radius: 20px; background: #1e1e2a; cursor: pointer; border: 1px solid transparent; }
-        .giphy-sticker:active { transform: scale(0.96); border-color: #5271FF; }
-
-        #singerDashboard { border: 1px solid rgba(43,174,106,0.5); background: linear-gradient(135deg, rgba(43,174,106,0.1), rgba(20,30,25,0.6)); margin-bottom: 20px; }
-        .voice-alert { background: #aa6fe5; border-radius: 40px; padding: 12px; margin-bottom: 18px; text-align: center; font-size: 0.85rem; }
-
-        .clap-row { display: flex; gap: 12px; margin: 16px 0 8px; }
-        .clap-btn { flex: 1; padding: 16px 0; border-radius: 56px; font-weight: 700; font-size: 1.2rem; border: none; background: #282839; color: white; }
-        .clap-btn:active { transform: scale(0.96); }
-        .energy-text { font-size: 0.8rem; text-align: center; color: #aaa; margin: 12px 0 4px; }
-
-        .team-selector { display: flex; gap: 12px; margin-bottom: 20px; }
-        .team-btn { flex: 1; background: #1f1f2c; border: 2px solid transparent; padding: 12px; border-radius: 60px; font-weight: 600; }
-
-        /* Modal y micrófono */
-        #inviteModal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 85%; max-width: 340px; background: #181826; border-radius: 40px;
-            z-index: 2000; padding: 20px; border: 1px solid rgba(255,255,255,0.2);
-            backdrop-filter: blur(20px);
-        }
-
-        #micModeSection {
+        .btn-primary { background: #5271FF; }
+        .btn-success { background: #2BAE6A; }
+        .clap-row { display: flex; gap: 12px; margin: 16px 0; }
+        .clap-btn { flex: 1; padding: 16px; border-radius: 56px; font-weight: 700; font-size: 1.2rem; background: #282839; }
+        .energy-text { font-size: 0.8rem; text-align: center; color: #aaa; margin-bottom: 8px; }
+        .giphy-results { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 12px; max-height: 200px; overflow-y: auto; }
+        .giphy-sticker { width: 100%; border-radius: 20px; cursor: pointer; }
+        input { width: 100%; padding: 14px; border-radius: 60px; background: #111118; border: none; color: white; margin-bottom: 12px; }
+        .footer { margin-top: 30px; text-align: center; font-size: 0.7rem; color: #5a5a70; }
+        #micFullscreen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #0B0B1A, #000000);
-            z-index: 3000; flex-direction: column; align-items: center; justify-content: center;
+            background: radial-gradient(circle, #0a0a1a, #000); z-index: 3000;
+            flex-direction: column; align-items: center; justify-content: center;
             text-align: center;
         }
-        .on-air { font-size: 1.6rem; font-weight: 700; color: #ff5e6b; margin-bottom: 30px; animation: pulse 1.5s infinite; }
-        .mic-icon { font-size: 100px; animation: float 2.5s infinite; }
-        .wave-group { display: flex; gap: 12px; margin: 30px 0; }
-        .wave { width: 8px; height: 35px; background: #2BAE6A; border-radius: 8px; animation: waveAnim 1s infinite alternate; }
-        .wave:nth-child(2) { animation-delay: 0.2s; height: 55px; }
-        .wave:nth-child(3) { animation-delay: 0.4s; }
+        .on-air { font-size: 2rem; color: #ff5e6b; margin-bottom: 30px; animation: pulse 1.5s infinite; }
+        .mic-icon { font-size: 100px; margin: 30px; }
         @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; text-shadow: 0 0 8px #ff5e6b; } }
-        @keyframes float { 0% { transform: translateY(0); } 100% { transform: translateY(-12px); } }
-        @keyframes waveAnim { 0% { transform: scaleY(0.5); } 100% { transform: scaleY(1.4); } }
-
-        .text-small { font-size: 0.75rem; color: #aaa; }
-        .badge { background: #2C2C3E; padding: 4px 12px; border-radius: 50px; font-size: 0.7rem; }
-        
-        /* Footer firma */
-        .app-footer {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 0.7rem;
-            color: #5a5a70;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 20px;
-        }
     </style>
 </head>
 <body>
-
-<div id="loginSection" class="card" style="max-width: 420px; margin: 20px auto;">
-    <div class="logo" style="justify-content: center; margin-bottom: 20px;">🔥🎤 <span>FireVoice</span></div>
-    <h2 style="margin-bottom: 20px; text-align: center;">Mando Karaoke</h2>
-    <input type="text" id="nicknameInput" placeholder="Tu nombre artístico" autocomplete="off">
-    <div class="team-selector">
-        <button type="button" class="team-btn" id="selectRedTeamBtn" style="border-color: #ff5773;">🔴 Equipo Rojo</button>
-        <button type="button" class="team-btn" id="selectBlueTeamBtn" style="border-color: #3b82f6;">🔵 Equipo Azul</button>
+<div id="loginSection" class="collapsible-section" style="max-width: 400px; margin: 20px auto;">
+    <div class="logo">🔥🎤 FireVoice</div>
+    <input type="text" id="nicknameInput" placeholder="Tu nombre">
+    <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <button id="selectRedBtn" style="flex:1; background:#1f1f2c; border:2px solid #ff5773; border-radius:60px; padding:12px;">🔴 Rojo</button>
+        <button id="selectBlueBtn" style="flex:1; background:#1f1f2c; border:2px solid #3b82f6; border-radius:60px; padding:12px;">🔵 Azul</button>
     </div>
-    <button class="btn-full btn-primary" id="enterBtn">✨ Entrar a la fiesta</button>
-    <div id="secureContextWarning" style="display: none; background:#e34d4d; border-radius: 60px; padding: 12px; margin-top: 16px; font-size:12px; text-align:center;">⚠️ HTTPS necesario para micrófono</div>
+    <button class="btn-full btn-primary" id="enterBtn">✨ Entrar</button>
+    <div id="secureWarning" style="display:none; background:#e34d4d; border-radius:60px; padding:10px; font-size:12px; text-align:center;">⚠️ HTTPS necesario para micrófono</div>
 </div>
 
-<div id="mainSection" style="display: none;">
-    <!-- Header con identidad -->
-    <div class="app-header">
-        <div class="logo">🔥🎤 <span>FireVoice</span></div>
-        <div class="team-badge" id="userTeamBadge">🔴 Rojo</div>
-    </div>
+<div id="mainSection" style="display:none;">
+    <div class="logo">🔥🎤 FireVoice <span id="userTeamBadge" style="font-size:0.8rem; background:#333; padding:4px 12px; border-radius:40px;"></span></div>
 
-    <!-- Marcador de equipos en tiempo real -->
     <div class="scoreboard" id="scoreboard">
-        <div class="team-score red-score">
-            <div class="team-name">🔥 ROJO</div>
-            <div class="points" id="redPoints">0</div>
-        </div>
+        <div class="team-score red-score"><div>🔴 ROJO</div><div class="points" id="redPoints">0</div></div>
         <div class="vs-divider">VS</div>
-        <div class="team-score blue-score">
-            <div class="team-name">💙 AZUL</div>
-            <div class="points" id="bluePoints">0</div>
-        </div>
+        <div class="team-score blue-score"><div>🔵 AZUL</div><div class="points" id="bluePoints">0</div></div>
     </div>
 
-    <!-- Panel del cantante (turno) -->
-    <div id="singerDashboard" class="collapsible-section" style="border-color: #2BAE6A;">
-        <div class="section-header" onclick="toggleCollapse(this.parentElement)">
-            <span>🎙️ <strong>🎤 Tu momento estelar</strong></span>
-            <span class="chevron">▼</span>
-        </div>
+    <div class="collapsible-section" id="singerPanel" style="border:1px solid #2BAE6A; display:none;">
+        <div class="section-header">🎤 TU MOMENTO <span class="chevron">▼</span></div>
         <div class="section-content">
-            <div id="voiceFxAlert" style="display: none; background: #9b59b6; border-radius: 60px; padding: 10px; margin-bottom: 18px; text-align: center;">
-                ⚠️ ¡SABOTAJE! Voz modulada: <span id="voiceFxAlertText">✨ Concierto</span>
-            </div>
-            <p style="margin-bottom: 12px; font-weight: 500;">🎵 Ahora suena: <strong id="currentSongTitle">-</strong></p>
-            <button class="btn-full btn-success" onclick="activarModoMicrofono()">🎙️ Activar micrófono</button>
-            <button class="btn-full btn-outline" onclick="abrirMenuInvitacion()">👥 Invitar co-cantante</button>
+            <div id="voiceAlert" style="background:#9b59b6; border-radius:60px; padding:10px; margin-bottom:12px; text-align:center; display:none;">⚠️ Voz modulada: <span id="voiceEffectText"></span></div>
+            <p><strong id="currentSongTitleTV">-</strong></p>
+            <button class="btn-full btn-success" id="micBtn">🎙️ Activar micrófono</button>
+            <button class="btn-full" id="inviteBtn">👥 Invitar co-cantante</button>
         </div>
     </div>
 
-    <!-- Interacción en Vivo (aplausos + chacal) -->
     <div class="collapsible-section">
-        <div class="section-header" onclick="toggleCollapse(this.parentElement)">
-            <span>🔥 <strong>Interacción en Vivo</strong></span>
-            <span class="chevron">▼</span>
-        </div>
+        <div class="section-header">🔥 INTERACCIÓN EN VIVO <span class="chevron">▼</span></div>
         <div class="section-content">
-            <div class="energy-text" id="clickCountDisplay">🎤 Energía: 100 aplausos disponibles</div>
+            <div class="energy-text" id="energyText">🎤 Energía: 100 aplausos</div>
             <div class="clap-row">
-                <button class="clap-btn" id="clapBtn" style="background:#F4B942; color:#1f1f2a;">👏 APLAUDIR</button>
-                <button class="clap-btn" id="screamBtn" style="background:#5271FF;">🗣️ GRITAR</button>
+                <button class="clap-btn" id="clapBtn">👏 APLAUDIR</button>
+                <button class="clap-btn" id="screamBtn">🗣️ GRITAR</button>
             </div>
-            <button class="btn-full" id="chacalBtn" style="background:#8B5A2B;">🪈 Llamar al Chacal (Zampoña)</button>
-            <p class="text-small" style="margin-top: 8px;">¡Cada aplauso o grito suma puntos para tu equipo!</p>
+            <button class="btn-full" id="chacalBtn">🪈 Llamar al Chacal</button>
         </div>
     </div>
 
-    <!-- Efectos de voz (colapsable) -->
     <div class="collapsible-section collapsed">
-        <div class="section-header" onclick="toggleCollapse(this.parentElement)">
-            <span>🎛️ <strong>Efectos de Voz</strong> <span class="badge">sabotaje</span></span>
-            <span class="chevron">▼</span>
-        </div>
+        <div class="section-header">🎛️ EFECTOS DE VOZ <span class="chevron">▼</span></div>
         <div class="section-content">
-            <p class="text-small" style="margin-bottom: 12px;">Modifica la voz del cantante por 10 segundos</p>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                <button class="btn-full voice-fx-btn" onclick="triggerVoiceFx('reverb')" style="flex:1; background:#8855dd;">✨ Concierto</button>
-                <button class="btn-full voice-fx-btn" onclick="triggerVoiceFx('helium')" style="flex:1; background:#ff9f4a;">🎈 Helio</button>
-                <button class="btn-full voice-fx-btn" onclick="triggerVoiceFx('monster')" style="flex:1; background:#555;">👹 Monstruo</button>
-                <button class="btn-full voice-fx-btn" onclick="triggerVoiceFx('normal')" style="flex:1; background:#2c2c3e;">🎙️ Normal</button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-full voiceFx" data-fx="reverb" style="flex:1; background:#8855dd;">✨ Concierto</button>
+                <button class="btn-full voiceFx" data-fx="helium" style="flex:1; background:#ff9f4a;">🎈 Helio</button>
+                <button class="btn-full voiceFx" data-fx="monster" style="flex:1; background:#555;">👹 Monstruo</button>
+                <button class="btn-full voiceFx" data-fx="normal" style="flex:1;">🎙️ Normal</button>
             </div>
         </div>
     </div>
 
-    <!-- Gestión de música -->
-    <div class="collapsible-section">
-        <div class="section-header" onclick="toggleCollapse(this.parentElement)">
-            <span>🎵 <strong>Lista y Fiesta</strong></span>
-            <span class="chevron">▼</span>
-        </div>
-        <div class="section-content">
-            <input type="text" id="urlInput" placeholder="Enlace de YouTube o búsqueda">
-            <button class="btn-full btn-primary" onclick="addSong()">➕ Añadir canción</button>
-            <button class="btn-full btn-danger" onclick="solicitarRanking()">🏆 Finalizar y ver ranking</button>
-        </div>
-    </div>
-
-    <!-- Reacciones rápidas -->
     <div class="collapsible-section collapsed">
-        <div class="section-header" onclick="toggleCollapse(this.parentElement)">
-            <span>✨ <strong>Reacciones Rápidas</strong></span>
-            <span class="chevron">▼</span>
-        </div>
+        <div class="section-header">🖼️ STICKERS <span class="chevron">▼</span></div>
         <div class="section-content">
-            <div class="effects-grid">
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', 'confetti')">🎉</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', 'fireworks')">🎆</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', '💓')">💓</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', '❤️‍🔥')">❤️‍🔥</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', '🤩')">🤩</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', '✨')">✨</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', '🎸')">🎸</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', '👍')">👍</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', '😂')">😂</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', '🎤')">🎤</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', 'ovacion')">👏</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', 'aplausos')">👐</button>
-                <button class="effect-btn" onclick="socket.emit('trigger-effect', 'multitud')">🏟️</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stickers GIPHY -->
-    <div class="collapsible-section collapsed">
-        <div class="section-header" onclick="toggleCollapse(this.parentElement)">
-            <span>🖼️ <strong>Stickers Animados</strong></span>
-            <span class="chevron">▼</span>
-        </div>
-        <div class="section-content">
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="giphySearchInput" placeholder="Buscar sticker...">
-                <button class="btn-full" style="width: auto; padding: 0 20px;" onclick="searchGiphy()">🔍</button>
-            </div>
+            <div style="display: flex; gap: 8px;"><input type="text" id="giphySearch" placeholder="Buscar..."><button id="searchGiphyBtn">🔍</button></div>
             <div class="giphy-results" id="giphyResults"></div>
         </div>
     </div>
-
-    <!-- Footer firma -->
-    <div class="app-footer">
-        FireVoice Karaoke · Sistema de mando interactivo · © 2025 · Creado con 🔥 para tu fiesta
-    </div>
+    <div class="footer">FireVoice Karaoke · Mando interactivo</div>
 </div>
 
-<div id="inviteModal" style="display: none;">
-    <h3 style="margin-bottom: 16px;">🎤 Invitar a dúo</h3>
-    <ul id="participantsList" style="list-style: none; max-height: 240px; overflow-y: auto;"></ul>
-    <button class="btn-full" style="margin-top: 20px; background:#444;" onclick="document.getElementById('inviteModal').style.display='none'">Cancelar</button>
-</div>
-
-<div id="micModeSection">
+<div id="micFullscreen">
     <div class="on-air">🔴 EN VIVO</div>
     <div class="mic-icon">🎤</div>
-    <div class="wave-group"><div class="wave"></div><div class="wave"></div><div class="wave"></div></div>
-    <p style="color: #aaa; margin-bottom: 40px;">Transmitiendo tu voz a la TV</p>
-    <button class="btn-full" style="width: 70%; background: #e34d4d;" onclick="desactivarModoMicrofono(true)">⏹️ Detener micrófono</button>
+    <button class="btn-full" id="stopMicBtn" style="background:#e34d4d; width:70%;">⏹️ Detener micrófono</button>
 </div>
 
 <script>
     const socket = io({ transports: ['websocket'] });
-    let myNickname = '';
-    let myTeam = 'red';
-    let isMicActive = false;
-    let micStream = null;
-    let mediaRecorder = null;
+    let myNickname = '', myTeam = 'red';
+    let totalClicks = 0, MAX_CLICKS = 100;
     let clickBuffer = { claps: 0, screams: 0 };
-    let totalClicksMade = 0;
-    const MAX_CLICKS = 100;
-    let activeSongId = null;
+    let isMicActive = false, mediaRecorder, micStream;
+    let currentGameMode = 'teams';
 
-    // Elementos del marcador
+    // Elementos
+    const loginDiv = document.getElementById('loginSection');
+    const mainDiv = document.getElementById('mainSection');
+    const scoreboardDiv = document.getElementById('scoreboard');
     const redPointsSpan = document.getElementById('redPoints');
     const bluePointsSpan = document.getElementById('bluePoints');
+    const singerPanel = document.getElementById('singerPanel');
+    const energySpan = document.getElementById('energyText');
     const userTeamBadge = document.getElementById('userTeamBadge');
+    const voiceAlert = document.getElementById('voiceAlert');
+    const voiceEffectText = document.getElementById('voiceEffectText');
+    const currentSongTitleSpan = document.getElementById('currentSongTitleTV');
 
-    // Actualizar puntuaciones desde el servidor
-    socket.on('team-scores', (scores) => {
-        if (scores.red !== undefined) redPointsSpan.innerText = scores.red;
-        if (scores.blue !== undefined) bluePointsSpan.innerText = scores.blue;
+    function toggleCollapse(el) { el.classList.toggle('collapsed'); }
+    document.querySelectorAll('.collapsible-section .section-header').forEach(header => {
+        header.onclick = (e) => toggleCollapse(header.parentElement);
     });
-
-    // También podrías pedir los scores iniciales después de conectar
-    socket.on('connect', () => {
-        if (myNickname) {
-            socket.emit('join-team', { nickname: myNickname, team: myTeam });
-            socket.emit('request-scores'); // asumiendo que el servidor responde con 'team-scores'
-        }
-    });
-
-    // Funciones UI
-    function toggleCollapse(sectionDiv) {
-        if (!sectionDiv) return;
-        sectionDiv.classList.toggle('collapsed');
-    }
 
     function selectTeam(team) {
         myTeam = team;
-        const redBtn = document.getElementById('selectRedTeamBtn');
-        const blueBtn = document.getElementById('selectBlueTeamBtn');
-        if (team === 'red') {
-            redBtn.style.borderColor = '#ff5773';
-            redBtn.style.background = 'rgba(255, 87, 115, 0.2)';
-            blueBtn.style.borderColor = '#3b82f6';
-            blueBtn.style.background = '#1f1f2c';
-            if (userTeamBadge) userTeamBadge.innerHTML = '🔴 Rojo';
-        } else {
-            blueBtn.style.borderColor = '#3b82f6';
-            blueBtn.style.background = 'rgba(59,130,246,0.2)';
-            redBtn.style.borderColor = '#ff5773';
-            redBtn.style.background = '#1f1f2c';
-            if (userTeamBadge) userTeamBadge.innerHTML = '🔵 Azul';
-        }
+        document.getElementById('selectRedBtn').style.borderColor = team === 'red' ? '#ff5773' : '#444';
+        document.getElementById('selectBlueBtn').style.borderColor = team === 'blue' ? '#3b82f6' : '#444';
     }
+    document.getElementById('selectRedBtn').onclick = () => selectTeam('red');
+    document.getElementById('selectBlueBtn').onclick = () => selectTeam('blue');
+    selectTeam('red');
 
-    function setNickname() {
-        const val = document.getElementById('nicknameInput').value.trim();
-        if (!val) return;
-        myNickname = val;
-        localStorage.setItem('karaoke_nick', myNickname);
-        localStorage.setItem('karaoke_team', myTeam);
-        
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('mainSection').style.display = 'block';
+    document.getElementById('enterBtn').onclick = () => {
+        const nick = document.getElementById('nicknameInput').value.trim();
+        if (!nick) return;
+        myNickname = nick;
+        loginDiv.style.display = 'none';
+        mainDiv.style.display = 'block';
+        socket.emit('join-team', { nickname: myNickname, team: myTeam });
         document.body.style.background = myTeam === 'red' ? '#0e0610' : '#05101f';
-        
-        if (socket.connected) {
-            socket.emit('join-team', { nickname: myNickname, team: myTeam });
-            socket.emit('request-scores');
-        } else {
-            socket.once('connect', () => {
-                socket.emit('join-team', { nickname: myNickname, team: myTeam });
-                socket.emit('request-scores');
-            });
-        }
-        setTimeout(() => searchGiphy('party'), 300);
-    }
-
-    function registerClick(type) {
-        if (totalClicksMade >= MAX_CLICKS) return;
-        if (navigator.vibrate) navigator.vibrate(20);
-        if (type === 'clap') clickBuffer.claps++;
-        else clickBuffer.screams++;
-        totalClicksMade++;
-        updateClickerUI();
-        // Nota: El servidor sumará puntos al equipo cuando reciba el buffer
-    }
+        userTeamBadge.innerText = myTeam === 'red' ? '🔴 Rojo' : '🔵 Azul';
+        setTimeout(() => searchGiphy('party'), 200);
+    };
 
     function updateClickerUI() {
-        const remaining = Math.max(0, MAX_CLICKS - totalClicksMade);
-        const display = document.getElementById('clickCountDisplay');
-        if (display) display.innerText = `🔥 Energía: ${remaining} aplausos restantes`;
-        if (totalClicksMade >= MAX_CLICKS) {
-            display.innerText = `⏳ Manos agotadas - espera siguiente canción`;
+        let remaining = Math.max(0, MAX_CLICKS - totalClicks);
+        energySpan.innerText = `🎤 Energía: ${remaining} aplausos`;
+        if (totalClicks >= MAX_CLICKS) {
+            energySpan.innerText = '⏳ Manos agotadas';
             document.getElementById('clapBtn').disabled = true;
             document.getElementById('screamBtn').disabled = true;
         } else {
@@ -495,194 +226,123 @@
         }
     }
 
-    function voteChacal() {
-        socket.emit('vote-chacal');
-        if (navigator.vibrate) navigator.vibrate(60);
-        const btn = document.getElementById('chacalBtn');
-        btn.disabled = true;
-        btn.innerText = '🪈 Zampoña enviada...';
-        setTimeout(() => {
-            btn.disabled = false;
-            btn.innerText = '🪈 Llamar al Chacal (Zampoña)';
-        }, 4000);
+    function registerClick(type) {
+        if (totalClicks >= MAX_CLICKS) return;
+        if (navigator.vibrate) navigator.vibrate(20);
+        if (type === 'clap') clickBuffer.claps++;
+        else clickBuffer.screams++;
+        totalClicks++;
+        updateClickerUI();
     }
+    document.getElementById('clapBtn').onclick = () => registerClick('clap');
+    document.getElementById('screamBtn').onclick = () => registerClick('scream');
 
-    function triggerVoiceFx(fxName) {
-        socket.emit('trigger-voice-effect', fxName);
-        if (navigator.vibrate) navigator.vibrate(50);
-        const btns = document.querySelectorAll('.voice-fx-btn');
-        btns.forEach(btn => { btn.disabled = true; btn.style.opacity = '0.5'; });
-        setTimeout(() => {
-            btns.forEach(btn => { btn.disabled = false; btn.style.opacity = '1'; });
-        }, 12000);
-    }
-
-    function solicitarRanking() {
-        if (confirm("¿Finalizar la fiesta y mostrar el ranking?")) {
-            socket.emit('request-final-ranking');
-        }
-    }
-
-    async function activarModoMicrofono() {
-        if (!navigator.mediaDevices || !window.isSecureContext) {
-            alert("Para usar micrófono: HTTPS o localhost. Usa un entorno seguro.");
-            return;
-        }
-        try {
-            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            document.getElementById('mainSection').style.display = 'none';
-            document.getElementById('micModeSection').style.display = 'flex';
-            isMicActive = true;
-            mediaRecorder = new MediaRecorder(micStream);
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) socket.emit('mic-audio', e.data);
-            };
-            mediaRecorder.start(250);
-        } catch(err) {
-            alert("Error de micrófono. Permisos requeridos.");
-        }
-    }
-
-    function desactivarModoMicrofono(manual = true) {
-        if (!isMicActive) return;
-        isMicActive = false;
-        if (micStream) micStream.getTracks().forEach(track => track.stop());
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-        document.getElementById('micModeSection').style.display = 'none';
-        if (myNickname) document.getElementById('mainSection').style.display = 'block';
-    }
-
-    function abrirMenuInvitacion() {
-        socket.emit('get-participants');
-        document.getElementById('inviteModal').style.display = 'block';
-    }
-
-    function addSong() {
-        const url = document.getElementById('urlInput').value.trim();
-        if (url) {
-            socket.emit('add-song', { url: url, nickname: myNickname });
-            document.getElementById('urlInput').value = '';
-        }
-    }
-
-    async function searchGiphy(queryFrom) {
-        const query = typeof queryFrom === 'string' ? queryFrom : document.getElementById('giphySearchInput').value || 'karaoke';
-        const container = document.getElementById('giphyResults');
-        container.innerHTML = '<p style="grid-column:span 3; text-align:center;">Cargando...</p>';
-        try {
-            const res = await fetch(`/api/giphy?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            container.innerHTML = '';
-            if(data.data && data.data.length) {
-                data.data.forEach(item => {
-                    const img = document.createElement('img');
-                    img.src = item.images.fixed_height.url;
-                    img.className = 'giphy-sticker';
-                    img.onclick = () => { socket.emit('send-sticker', img.src); };
-                    container.appendChild(img);
-                });
-            } else container.innerHTML = '<p style="text-align:center;">Sin resultados 🔍</p>';
-        } catch(e) { container.innerHTML = '<p>Error al cargar stickers</p>'; }
-    }
-
-    // Eventos socket existentes
-    socket.on('state-update', ({ currentSong, activeVoiceEffect }) => {
-        const singerPanel = document.getElementById('singerDashboard');
-        if (currentSong && currentSong.requester === myNickname) {
-            singerPanel.style.display = 'block';
-            document.getElementById('currentSongTitle').innerText = currentSong.title || '🎵 Canción';
-            const alertDiv = document.getElementById('voiceFxAlert');
-            if (activeVoiceEffect && activeVoiceEffect !== 'normal') {
-                const fxMap = { reverb: 'Eco Concierto ✨', helium: 'Helio 🎈', monster: 'Monstruo 👹' };
-                document.getElementById('voiceFxAlertText').innerText = fxMap[activeVoiceEffect] || activeVoiceEffect;
-                alertDiv.style.display = 'block';
-            } else if(alertDiv) alertDiv.style.display = 'none';
-        } else {
-            singerPanel.style.display = 'none';
-            if (isMicActive) desactivarModoMicrofono(false);
-        }
-        const newSongId = currentSong ? currentSong.id : null;
-        if (newSongId !== activeSongId) {
-            activeSongId = newSongId;
-            totalClicksMade = 0;
-            updateClickerUI();
-        }
-    });
-
-    socket.on('voice-effect-changed', ({ effect }) => {
-        const alertDiv = document.getElementById('voiceFxAlert');
-        if (!alertDiv) return;
-        if (effect === 'normal') alertDiv.style.display = 'none';
-        else {
-            const fxMap = { reverb: 'Eco Concierto ✨', helium: 'Voz Helio 🎈', monster: 'Monstruo 👹' };
-            document.getElementById('voiceFxAlertText').innerText = fxMap[effect] || effect;
-            alertDiv.style.display = 'block';
-        }
-    });
-
-    socket.on('participants-list', (list) => {
-        const ul = document.getElementById('participantsList');
-        ul.innerHTML = '';
-        list.forEach(p => {
-            if(p.id !== socket.id) {
-                const li = document.createElement('li');
-                li.style.margin = "8px 0";
-                li.innerHTML = `<span>${p.name}</span> <button style="float:right; background:#2BAE6A; border:none; padding:6px 14px; border-radius:40px; color:white;" onclick="socket.emit('invite-participant', {targetSocketId: '${p.id}'}); document.getElementById('inviteModal').style.display='none';">Invitar</button>`;
-                ul.appendChild(li);
-            }
-        });
-    });
-
-    socket.on('receive-invitation', ({ fromId, fromName }) => {
-        if (confirm(`✨ ${fromName} te invita a cantar a dúo. ¿Aceptas?`)) {
-            socket.emit('accept-invitation', fromId);
-            document.getElementById('singerDashboard').style.display = 'block';
-            document.getElementById('currentSongTitle').innerText = "Dúo con " + fromName;
-        }
-    });
-    socket.on('invitation-accepted', () => alert("¡Tu compañero aceptó! Ambos pueden cantar."));
-
-    // Envío periódico de clics
     setInterval(() => {
-        if (clickBuffer.claps > 0 || clickBuffer.screams > 0) {
+        if (clickBuffer.claps || clickBuffer.screams) {
             socket.emit('submit-claps', clickBuffer);
             clickBuffer.claps = 0;
             clickBuffer.screams = 0;
         }
     }, 300);
-    setInterval(() => { if (socket.connected) socket.emit('ping'); }, 20000);
 
-    // Inicialización
-    window.onload = () => {
-        const savedNick = localStorage.getItem('karaoke_nick');
-        if (savedNick) {
-            document.getElementById('nicknameInput').value = savedNick;
-            myTeam = localStorage.getItem('karaoke_team') || 'red';
-            selectTeam(myTeam);
-        }
-        document.getElementById('enterBtn').onclick = setNickname;
-        if (!window.isSecureContext) document.getElementById('secureContextWarning').style.display = 'block';
-        document.querySelectorAll('.collapsible-section').forEach(section => {
-            const header = section.querySelector('.section-header');
-            if(header && !header.hasAttribute('data-listener')) {
-                header.setAttribute('data-listener', 'true');
-                header.onclick = (e) => { e.stopPropagation(); toggleCollapse(section); };
-            }
-        });
+    document.getElementById('chacalBtn').onclick = () => {
+        socket.emit('vote-chacal');
+        const btn = document.getElementById('chacalBtn');
+        btn.disabled = true;
+        btn.innerText = '🪈 Enviado...';
+        setTimeout(() => { btn.disabled = false; btn.innerText = '🪈 Llamar al Chacal'; }, 4000);
     };
 
-    // Exponer funciones globales
-    window.toggleCollapse = toggleCollapse;
-    window.selectTeam = selectTeam;
-    window.setNickname = setNickname;
-    window.registerClick = registerClick;
-    window.voteChacal = voteChacal;
-    window.triggerVoiceFx = triggerVoiceFx;
-    window.solicitarRanking = solicitarRanking;
-    window.activarModoMicrofono = activarModoMicrofono;
-    window.desactivarModoMicrofono = desactivarModoMicrofono;
-    window.abrirMenuInvitacion = abrirMenuInvitacion;
-    window.addSong = addSong;
+    document.querySelectorAll('.voiceFx').forEach(btn => {
+        btn.onclick = () => {
+            const fx = btn.dataset.fx;
+            socket.emit('trigger-voice-effect', fx);
+            document.querySelectorAll('.voiceFx').forEach(b => b.disabled = true);
+            setTimeout(() => document.querySelectorAll('.voiceFx').forEach(b => b.disabled = false), 12000);
+        };
+    });
+
+    document.getElementById('micBtn').onclick = async () => {
+        if (!navigator.mediaDevices || !window.isSecureContext) return alert("HTTPS necesario");
+        try {
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            document.getElementById('micFullscreen').style.display = 'flex';
+            mainDiv.style.display = 'none';
+            isMicActive = true;
+            mediaRecorder = new MediaRecorder(micStream);
+            mediaRecorder.ondataavailable = e => { if(e.data.size) socket.emit('mic-audio', e.data); };
+            mediaRecorder.start(250);
+        } catch(e) { alert("Error de micrófono"); }
+    };
+    document.getElementById('stopMicBtn').onclick = () => {
+        if (isMicActive) {
+            micStream.getTracks().forEach(t => t.stop());
+            mediaRecorder.stop();
+            isMicActive = false;
+        }
+        document.getElementById('micFullscreen').style.display = 'none';
+        mainDiv.style.display = 'block';
+    };
+    document.getElementById('inviteBtn').onclick = () => socket.emit('get-participants');
+    socket.on('participants-list', (list) => {
+        let html = '<div style="position:fixed;top:20%;left:10%;width:80%;background:#222;border-radius:28px;padding:20px;z-index:2000;"><h3>Invitar a dúo</h3><ul>';
+        list.forEach(p => { if(p.id !== socket.id) html += `<li>${p.name} <button onclick="socket.emit('invite-participant', {targetSocketId:'${p.id}'})">Invitar</button></li>`; });
+        html += '</ul><button onclick="this.parentElement.remove()">Cerrar</button></div>';
+        document.body.insertAdjacentHTML('beforeend', html);
+    });
+    socket.on('receive-invitation', ({ fromId, fromName }) => {
+        if(confirm(`${fromName} te invita a cantar. ¿Aceptas?`)) socket.emit('accept-invitation', fromId);
+    });
+    socket.on('invitation-accepted', () => alert("¡Dúo activado!"));
+
+    socket.on('state-update', (data) => {
+        if (data.currentSong && data.currentSong.requester === myNickname) {
+            singerPanel.style.display = 'block';
+            currentSongTitleSpan.innerText = data.currentSong.title;
+        } else singerPanel.style.display = 'none';
+        if (data.currentSongClaps !== undefined) {
+            totalClicks = 100 - data.currentSongClaps;
+            updateClickerUI();
+        }
+        if (data.gameMode) currentGameMode = data.gameMode;
+        if (data.teamScores) {
+            redPointsSpan.innerText = data.teamScores.red;
+            bluePointsSpan.innerText = data.teamScores.blue;
+        }
+        if (currentGameMode === 'arcade') scoreboardDiv.style.display = 'none';
+        else scoreboardDiv.style.display = 'flex';
+    });
+    socket.on('team-scores', (scores) => {
+        redPointsSpan.innerText = scores.red;
+        bluePointsSpan.innerText = scores.blue;
+    });
+    socket.on('voice-effect-changed', ({ effect }) => {
+        if (effect === 'normal') voiceAlert.style.display = 'none';
+        else { voiceEffectText.innerText = effect; voiceAlert.style.display = 'block'; }
+    });
+    socket.on('game-mode-changed', (mode) => {
+        currentGameMode = mode;
+        scoreboardDiv.style.display = mode === 'teams' ? 'flex' : 'none';
+    });
+
+    async function searchGiphy(q) {
+        const query = q || document.getElementById('giphySearch').value || 'party';
+        const container = document.getElementById('giphyResults');
+        container.innerHTML = '<p>Cargando...</p>';
+        try {
+            const res = await fetch(`/api/giphy?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            container.innerHTML = '';
+            data.data.forEach(sticker => {
+                const img = document.createElement('img');
+                img.src = sticker.images.fixed_height.url;
+                img.className = 'giphy-sticker';
+                img.onclick = () => socket.emit('send-sticker', img.src);
+                container.appendChild(img);
+            });
+        } catch(e) { container.innerHTML = '<p>Error</p>'; }
+    }
+    document.getElementById('searchGiphyBtn').onclick = () => searchGiphy();
     window.searchGiphy = searchGiphy;
 </script>
 </body>
