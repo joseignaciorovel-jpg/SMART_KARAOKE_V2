@@ -6,7 +6,6 @@
     <title>Karaoke Party - TV Experience</title>
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
-    <!-- Importar fuente Poppins para un look más estilizado y moderno -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
@@ -28,7 +27,7 @@
             transition: all 0.3s;
         }
 
-        /* ---------- OVERLAY DE INICIO PREMIUM (FONDO CON FADE IN + TIPOGRAFÍA ESTILIZADA) ---------- */
+        /* ---------- OVERLAY DE INICIO PREMIUM ---------- */
         #startOverlay {
             position: fixed;
             top: 0;
@@ -50,21 +49,15 @@
             transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
             animation: backgroundFadeIn 1.8s ease-out forwards;
         }
-        
-        /* Animación para que el fondo aparezca con fade-in */
         @keyframes backgroundFadeIn {
             0% { opacity: 0; backdrop-filter: blur(0px); }
             100% { opacity: 1; backdrop-filter: blur(5px); }
         }
-
-        /* Desvanecimiento con efecto zoom al hacer clic */
         #startOverlay.fade-out {
             opacity: 0;
             transform: scale(1.12);
             pointer-events: none;
         }
-
-        /* CONTENEDOR DEL TÍTULO PRINCIPAL */
         .title-wrapper {
             display: inline-flex;
             align-items: baseline;
@@ -73,11 +66,9 @@
             justify-content: center;
             font-family: 'Poppins', sans-serif;
         }
-        
-        /* EFECTO MÁQUINA DE ESCRIBIR: se escribe "KARAOKE PART" con fuente estilizada y menos gruesa */
         .typing-text {
             font-size: 5rem !important;
-            font-weight: 600 !important;  /* Semibold más elegante, no tan grueso */
+            font-weight: 600 !important;
             letter-spacing: 2px;
             background: linear-gradient(135deg, #ffcc33, #ff66aa);
             -webkit-background-clip: text;
@@ -88,13 +79,10 @@
             white-space: nowrap;
             width: 0;
             display: inline-block;
-            /* "KARAOKE PART" = 12 caracteres (K A R A O K E espacio P A R T) */
             animation: typing 2s steps(12) forwards, 
                        blink 0.5s step-end infinite alternate,
                        removeCursor 0.3s forwards 2.5s;
         }
-        
-        /* Elementos que aparecen después (letra 'Y' y micrófono) para completar "PARTY" */
         .extra-title {
             display: inline-flex;
             align-items: center;
@@ -102,7 +90,7 @@
             opacity: 0;
             transform: translateX(-10px);
             animation: fadeInMove 0.6s ease-out forwards;
-            animation-delay: 2.3s; /* Justo después de terminar el typing y eliminar cursor */
+            animation-delay: 2.3s;
         }
         .extra-y {
             font-size: 5rem !important;
@@ -124,18 +112,14 @@
             opacity: 0;
             transform: scale(0.6);
         }
-        
         @keyframes fadeInMove {
             to { opacity: 1; transform: translateX(0); }
         }
-        
         @keyframes bounceMic {
             0% { opacity: 0; transform: scale(0.5) rotate(-15deg); }
             60% { opacity: 1; transform: scale(1.2) rotate(5deg); }
             100% { opacity: 1; transform: scale(1) rotate(0deg); }
         }
-
-        /* SUBTÍTULO FLOTANTE (más estilizado) */
         #startOverlay p {
             font-size: 1.5rem;
             font-weight: 400;
@@ -148,8 +132,6 @@
             max-width: 80%;
             text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
-
-        /* BOTÓN ESTILO CIBER-NÉON INTERACTIVO */
         .start-btn-huge {
             background: rgba(255, 0, 170, 0.15);
             border: 2px solid #ff00aa;
@@ -166,21 +148,17 @@
             box-shadow: 0 0 15px rgba(255, 0, 170, 0.4);
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             opacity: 0;
-            animation: 
-                fadeInUp 0.8s ease-out forwards 2.7s,
-                pulseGlow 2s infinite alternate ease-in-out 3.5s;
+            animation: fadeInUp 0.8s ease-out forwards 2.7s,
+                       pulseGlow 2s infinite alternate ease-in-out 3.5s;
         }
-
         .start-btn-huge:hover {
             background: #ff00aa;
             box-shadow: 0 0 30px #ff00aa, 0 0 50px #9b59b6;
             transform: scale(1.05) translateY(-3px);
         }
-
-        /* ANIMACIONES PRINCIPALES */
         @keyframes typing {
             from { width: 0; }
-            to { width: 12ch; } /* "KARAOKE PART" 12 caracteres */
+            to { width: 12ch; }
         }
         @keyframes blink {
             from, to { border-color: transparent; }
@@ -220,7 +198,7 @@
         }
         body.cinema-mode [style*="display: grid"] { display: block !important; }
 
-        /* ---------- BOTONES MAGIC UI (EFECTO MAGNÉTICO) ---------- */
+        /* ---------- BOTONES MAGIC UI ---------- */
         .magic-btn {
             background: linear-gradient(135deg, #6e8efb, #a777e3);
             border: none;
@@ -367,16 +345,37 @@
             90% { transform: translate(2px, 2px) rotate(0deg); }
             100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
+
+        /* Botón flotante para cambiar modo (estilo consistente) */
+        .mode-toggle-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid #ff00aa;
+            border-radius: 60px;
+            padding: 10px 20px;
+            color: white;
+            font-weight: bold;
+            z-index: 10000;
+            cursor: pointer;
+            font-size: 0.9rem;
+            box-shadow: 0 0 10px rgba(255,0,170,0.3);
+            transition: all 0.2s;
+        }
+        .mode-toggle-btn:hover {
+            background: #ff00aa;
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body>
 
-<!-- OVERLAY DE INICIO PREMIUM: TÍTULO "KARAOKE PARTY" COMPLETO CON ESCRITURA ESTILIZADA -->
+<!-- OVERLAY DE INICIO PREMIUM -->
 <div id="startOverlay">
     <div class="title-wrapper">
-        <!-- Se escribe "KARAOKE PART" (12 caracteres) -->
         <span class="typing-text">KARAOKE PART</span>
-        <!-- Luego aparece la 'Y' + micrófono para completar "PARTY" -->
         <span class="extra-title">
             <span class="extra-y">Y</span>
             <span class="microphone-icon">🎤</span>
@@ -402,8 +401,8 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
         <h1 style="background: linear-gradient(135deg,#ffcc33,#ff66aa); -webkit-background-clip:text; color:transparent; font-weight:600;">🎤 KARAOKE PARTY</h1>
         
-        <!-- MARCADOR DE EQUIPOS (MODO DESAFÍO) -->
-        <div style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 10px 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 5px 15px rgba(0,0,0,0.3); min-width: 280px; justify-content: space-around;">
+        <!-- MARCADOR DE EQUIPOS (ahora con ID para ocultar) -->
+        <div id="teamScoreboard" style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 10px 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 5px 15px rgba(0,0,0,0.3); min-width: 280px; justify-content: space-around;">
             <div style="text-align: center;">
                 <h4 style="color: #ff4757; font-size: 11px; letter-spacing: 1px; margin-bottom: 2px;">🔴 ROJO</h4>
                 <span id="scoreRed" style="font-size: 24px; font-weight: 800; color: #ff4757;">0</span>
@@ -420,34 +419,30 @@
             <p style="color:white; font-size:12px; margin-top:5px;">📲 Escanea para unirse</p>
         </div>
     </div>
-<div class="player-wrapper">
-    <div id="applauseMeterContainer">
-        <div id="applauseMeterBar">
-            <div id="applauseFill" style="height: 0%;"></div>
+    <div class="player-wrapper">
+        <div id="applauseMeterContainer">
+            <div id="applauseMeterBar">
+                <div id="applauseFill" style="height: 0%;"></div>
+            </div>
+            <div id="applausePercent" style="font-size: 11px; font-weight: bold; margin-top: 10px; color: #ffd700;">0%</div>
         </div>
-        <div id="applausePercent" style="font-size: 11px; font-weight: bold; margin-top: 10px; color: #ffd700;">0%</div>
+        <div id="youtubePlayer"></div>
     </div>
-    
-    <div id="youtubePlayer"></div>
-</div>
-<!-- NUEVA BOTONERA ESTILO YOUTUBE -->
-<div class="controls-container">
-    <button class="magic-btn" id="prevBtn" title="Atrás">⏮️</button>
-    <button class="magic-btn" id="playBtn" title="Play">▶️</button>
-    <button class="magic-btn" id="pauseBtn" title="Pausa">⏸️</button>
-    <button class="magic-btn" id="skipBtn" title="Siguiente">⏭️</button>
-    <button class="magic-btn" id="cinemaBtn" title="Modo Cine">🎬</button>
-    <button class="magic-btn" id="clearBtn" title="Vaciar Cola">🧹</button>
-            </div>
-            <div class="now-playing-card" style="margin-top: 20px; background: rgba(255,255,255,0.05); border-radius: 28px; padding: 15px;">
-                <h3>🎵 Ahora suena:</h3>
-                <div id="currentSongDisplay">Esperando canciones...</div>
-            </div>
-        </div>
-        <div>
-            <h3>📋 Siguientes en la cola</h3>
-            <div id="queueList" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
-        </div>
+    <div class="controls-container">
+        <button class="magic-btn" id="prevBtn" title="Atrás">⏮️</button>
+        <button class="magic-btn" id="playBtn" title="Play">▶️</button>
+        <button class="magic-btn" id="pauseBtn" title="Pausa">⏸️</button>
+        <button class="magic-btn" id="skipBtn" title="Siguiente">⏭️</button>
+        <button class="magic-btn" id="cinemaBtn" title="Modo Cine">🎬</button>
+        <button class="magic-btn" id="clearBtn" title="Vaciar Cola">🧹</button>
+    </div>
+    <div class="now-playing-card" style="margin-top: 20px; background: rgba(255,255,255,0.05); border-radius: 28px; padding: 15px;">
+        <h3>🎵 Ahora suena:</h3>
+        <div id="currentSongDisplay">Esperando canciones...</div>
+    </div>
+    <div>
+        <h3>📋 Siguientes en la cola</h3>
+        <div id="queueList" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
     </div>
 </div>
 <div id="fullscreenOverlay"></div>
@@ -459,10 +454,9 @@
     <button class="close-ranking" onclick="document.getElementById('finalRankingOverlay').style.display='none'">Cerrar</button>
 </div>
 
-<!-- WIDGET DEL CHACAL DE LA ZAMPOÑA (CO-ANIMADOR ANDINO) -->
+<!-- WIDGET DEL CHACAL DE LA ZAMPOÑA -->
 <div id="chacalWidget" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; display: none; width: 180px; height: 180px; transition: all 0.5s ease-out; pointer-events: none;">
     <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; filter: drop-shadow(0 0 15px rgba(255,165,0,0.6));">
-        <!-- Chullo (Gorro Altiplánico) -->
         <path d="M 26 50 C 26 15, 74 15, 74 50 Z" fill="#c0392b" stroke="#ffcc00" stroke-width="2" />
         <path d="M 30 35 Q 50 25 70 35" fill="none" stroke="#27ae60" stroke-width="4" />
         <path d="M 27 43 Q 50 33 73 43" fill="none" stroke="#f1c40f" stroke-width="4" />
@@ -471,15 +465,11 @@
         <circle cx="22" cy="65" r="2" fill="#f1c40f" />
         <path d="M 73 48 L 78 65 L 68 60 Z" fill="#c0392b" stroke="#ffcc00" stroke-width="1" />
         <circle cx="78" cy="65" r="2" fill="#f1c40f" />
-        
-        <!-- Cara Oculta del Chacal -->
         <circle cx="50" cy="52" r="20" fill="#222" />
         <circle cx="44" cy="50" r="2.5" fill="yellow" />
         <circle cx="56" cy="50" r="2.5" fill="yellow" />
         <path d="M 40 46 L 47 48" stroke="#ff0055" stroke-width="2" />
         <path d="M 60 46 L 53 48" stroke="#ff0055" stroke-width="2" />
-        
-        <!-- Zampoña (Mantiene ID para compatibilidad con la animación de agitación JS) -->
         <g id="chacalTrumpet" style="transform-origin: 50% 60%; transition: transform 0.2s;">
             <rect x="36" y="62" width="4" height="25" fill="#d2a679" stroke="#5c3a21" stroke-width="1" />
             <rect x="41" y="62" width="4" height="22" fill="#d2a679" stroke="#5c3a21" stroke-width="1" />
@@ -495,12 +485,16 @@
     </div>
 </div>
 
+<!-- Botón flotante para cambiar modo (solo administrador) -->
+<div class="mode-toggle-btn" id="modeToggleBtn">🎮 Modo: Equipos</div>
+
 <script>
     // ---------- CONEXIÓN SOCKET Y VARIABLES GLOBALES ----------
     const socket = io({ transports: ['websocket'] });
     let ytPlayer = null;
     let currentVideoId = null;
     let songCounter = 0;
+    let currentGameMode = 'teams';
 
     if (typeof confetti === 'undefined') window.confetti = () => console.log("mock confetti");
 
@@ -540,27 +534,17 @@
     // ---------- YOUTUBE API Y ARRANQUE SEGURO ----------
     function iniciarKaraoke() {
         const overlay = document.getElementById('startOverlay');
-        
-        // Sonido de multitud al inicio (premium)
         try {
             const crowdAudio = new Audio('/assets/sounds/multitud.wav');
             crowdAudio.volume = 0.6;
             crowdAudio.play().catch(err => console.log("Audio multitud bloqueado:", err));
         } catch(e) { console.log("Error audio"); }
-
         overlay.classList.add('fade-out');
-        setTimeout(() => {
-            overlay.style.display = 'none';
-        }, 800);
-        
-        // Lógica original: sintetizador y API de YouTube
+        setTimeout(() => { overlay.style.display = 'none'; }, 800);
         try {
             const utterance = new SpeechSynthesisUtterance('');
             window.speechSynthesis.speak(utterance);
-        } catch (e) {
-            console.log("TTS init blocked or unsupported:", e);
-        }
-        
+        } catch (e) { console.log("TTS init blocked or unsupported:", e); }
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         document.head.appendChild(tag);
@@ -569,7 +553,7 @@
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('youtubePlayer', {
             videoId: '',
-            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0,'origin': 'https://firevoice.up.railway.app' },
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0, 'origin': 'https://firevoice.up.railway.app' },
             events: {
                 'onReady': (e) => { 
                     e.target.unMute(); 
@@ -603,20 +587,21 @@
         updateQueue(state.queue);
         updateNowPlaying(state.currentSong);
         
-        // Actualizar marcador de equipos
         if (state.teamScores) {
             document.getElementById('scoreRed').innerText = state.teamScores.red || 0;
             document.getElementById('scoreBlue').innerText = state.teamScores.blue || 0;
         }
-
-        // Actualizar aplausómetro
-        if (state.currentSongClaps !== undefined) {
-            updateApplauseMeter(state.currentSongClaps);
-        }
-
-        // Sincronizar efecto de voz
-        if (state.activeVoiceEffect !== undefined) {
-            currentVoiceEffectName = state.activeVoiceEffect;
+        if (state.currentSongClaps !== undefined) updateApplauseMeter(state.currentSongClaps);
+        if (state.activeVoiceEffect !== undefined) currentVoiceEffectName = state.activeVoiceEffect;
+        
+        // Modo de juego
+        if (state.gameMode !== undefined) {
+            currentGameMode = state.gameMode;
+            const btn = document.getElementById('modeToggleBtn');
+            if (currentGameMode === 'teams') btn.innerHTML = '🎮 Modo: Equipos';
+            else btn.innerHTML = '🎮 Modo: Arcade';
+            const scoreboard = document.getElementById('teamScoreboard');
+            if (scoreboard) scoreboard.style.display = currentGameMode === 'teams' ? 'flex' : 'none';
         }
 
         if (state.currentSong) {
@@ -636,7 +621,7 @@
         }
     });
 
-        function triggerSongTransition(nextSong) {
+    function triggerSongTransition(nextSong) {
         const overlay = document.getElementById('songTransitionOverlay');
         const presenterMsg = document.getElementById('presenterMessage');
         const nextStarName = document.getElementById('nextStarName');
@@ -656,45 +641,36 @@
             overlay.style.display = 'none';
             if (ytPlayer && ytPlayer.loadVideoById) ytPlayer.loadVideoById(currentVideoId);
         }
-
-        // Fallback de seguridad de 6 segundos por si falla SpeechSynthesis o se bloquea
         const fallbackTimeout = setTimeout(clearTransition, 6000);
-
         let textoALeer = `${frase} ${nextSong.requester} con la canción ${nextSong.title}.`;
         if (frase.includes(nextSong.requester)) textoALeer = frase;
 
-        // INTENTO 1: Pedirle el audio premium a tu server.js
         fetch('/api/hablar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ texto: textoALeer })
         })
         .then(response => {
-            if (!response.ok) throw new Error("ElevenLabs falló, pasando a plan B");
+            if (!response.ok) throw new Error("ElevenLabs falló");
             return response.blob();
         })
         .then(blob => {
-            // Si funcionó, reproducimos la voz humana
             const audioUrl = URL.createObjectURL(blob);
             const audioPremium = new Audio(audioUrl);
-            
             audioPremium.onended = () => {
                 clearTimeout(fallbackTimeout);
                 setTimeout(clearTransition, 1000);
             };
-            audioPremium.play().catch(e => { throw new Error("Navegador bloqueó el autoplay del audio"); });
+            audioPremium.play().catch(e => { throw new Error("Bloqueado"); });
         })
         .catch(err => {
-            console.log("Activando voz robótica secundaria...", err.message);
-            
-            // INTENTO 2 (PLAN B): Usar la voz nativa que ya tenías programada
+            console.log("Usando voz secundaria", err.message);
             try {
                 const utterance = new SpeechSynthesisUtterance(textoALeer);
                 const voices = window.speechSynthesis.getVoices();
                 utterance.voice = voices.find(v => v.lang === 'es-CL') || voices.find(v => v.lang.startsWith('es'));
                 utterance.pitch = 0.9 + Math.random() * 0.2;
                 utterance.rate = 0.85 + Math.random() * 0.15;
-                
                 utterance.onend = () => {
                     clearTimeout(fallbackTimeout);
                     setTimeout(clearTransition, 1000);
@@ -705,12 +681,11 @@
                 };
                 window.speechSynthesis.speak(utterance);
             } catch (fallbackErr) {
-                console.error("Ambas voces fallaron:", fallbackErr);
                 clearTimeout(fallbackTimeout);
                 clearTransition();
             }
         });
-    } // <--- Esta es la llave que faltaba para cerrar la función principal
+    }
 
     // ---------- REACCIONES VISUALES ----------
     function spawnEmoji(emojiChar) {
@@ -765,7 +740,7 @@
 
     // ---------- RANKING FINAL ----------
     socket.on('show-final-ranking', (data) => {
-        let rankingArray = (data && data.fullRanking) ? data.fullRanking : (Array.isArray(data) ? data : []);
+        let rankingArray = (data && data.individual) ? data.individual : (Array.isArray(data) ? data : []);
         if (!rankingArray.length) {
             document.getElementById('finalRankingOverlay').style.display = 'flex';
             document.getElementById('podiumContainer').innerHTML = '<p style="grid-column:span 3; text-align:center;">✨ Aún no hay puntuaciones ✨</p>';
@@ -804,40 +779,38 @@
             const utterance = new SpeechSynthesisUtterance(`¡Felicidades al ganador! ${winner.name} con ${winner.score} puntos.`);
             utterance.rate = 0.9;
             window.speechSynthesis.speak(utterance);
-        } catch (err) {
-            console.error("Speech Synthesis error on podium:", err);
-        }
+        } catch (err) {}
     });
 
     // ---------- UI AUXILIAR ----------
-  function updateQueue(queue) {
-    const container = document.getElementById('queueList');
-    
-    if (!queue || !queue.length) { 
-        container.innerHTML = `
-            <div class="empty-queue-msg">
-                ✨ ¡LA PISTA ES TODA TUYA! ✨ <br>
-                <span style="font-size: 1rem; color: #fff; margin-top: 10px; display: block;">Sé el primero en cantar</span>
-            </div>`; 
-        return; 
+    function updateQueue(queue) {
+        const container = document.getElementById('queueList');
+        if (!queue || !queue.length) { 
+            container.innerHTML = `
+                <div class="empty-queue-msg">
+                    ✨ ¡LA PISTA ES TODA TUYA! ✨ <br>
+                    <span style="font-size: 1rem; color: #fff; margin-top: 10px; display: block;">Sé el primero en cantar</span>
+                </div>`; 
+            return; 
+        }
+        container.innerHTML = queue.map(s => `
+            <div class="queue-item">
+                <img src="${s.thumbnail}" width="60" style="border-radius:12px">
+                <div style="flex:1">
+                    <strong>${escapeHtml(s.title)}</strong><br>
+                    <small style="opacity: 0.7;">👤 ${escapeHtml(s.requester)}</small>
+                </div>
+                <button class="magic-btn" style="background:#ff4757; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>
+            </div>
+        `).join('');
     }
 
-    container.innerHTML = queue.map(s => `
-        <div class="queue-item">
-            <img src="${s.thumbnail}" width="60" style="border-radius:12px">
-            <div style="flex:1">
-                <strong>${escapeHtml(s.title)}</strong><br>
-                <small style="opacity: 0.7;">👤 ${escapeHtml(s.requester)}</small>
-            </div>
-            <button class="magic-btn" style="background:#ff4757; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>
-        </div>
-    `).join('');
-}
     function updateNowPlaying(song) {
         const container = document.getElementById('currentSongDisplay');
         if(song) container.innerHTML = `<div style="display:flex; gap:15px;"><img src="${song.thumbnail}" width="80" style="border-radius:12px"><div><h3>${escapeHtml(song.title)}</h3><p>👤 ${escapeHtml(song.requester)}</p></div></div>`;
         else container.innerHTML = '<p>⏸️ Esperando canciones...</p>';
     }
+
     function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
 
     // Botones de control
@@ -890,43 +863,34 @@
     socket.on('next-song', () => { window.hasStarted = false; window.hasEnded = false; });
 
     // Invitaciones y dúos
-    socket.on('receive-invitation', ({ fromName }) => {
-        console.log(`${fromName} ha enviado una invitación.`);
-    });
+    socket.on('receive-invitation', ({ fromName }) => { console.log(`${fromName} ha enviado una invitación.`); });
     socket.on('invitation-accepted', (friendId) => {
         console.log("¡Dúo aceptado!");
         if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 10000 });
     });
-    // Pipeline de Web Audio API para Modulación de Voz en Tiempo Real
+
+    // Pipeline de Web Audio API para Modulación de Voz
     let audioCtx = null;
     let mainGainNode = null;
     let delayNode = null;
     let feedbackGainNode = null;
-    let currentVoiceEffectName = 'normal'; // 'normal' | 'reverb' | 'helium' | 'monster'
+    let currentVoiceEffectName = 'normal';
 
     function initAudioContext() {
         if (audioCtx) return;
-        
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         mainGainNode = audioCtx.createGain();
-        mainGainNode.gain.value = 1.35; // Refuerzo de volumen del mic
-        
-        // Eco / Delay (karaoke reverb)
+        mainGainNode.gain.value = 1.35;
         delayNode = audioCtx.createDelay(1.0);
-        delayNode.delayTime.value = 0.22; // 220ms
-        
+        delayNode.delayTime.value = 0.22;
         feedbackGainNode = audioCtx.createGain();
-        feedbackGainNode.gain.value = 0.35; // Retroalimentación
-        
+        feedbackGainNode.gain.value = 0.35;
         delayNode.connect(feedbackGainNode);
         feedbackGainNode.connect(delayNode);
-        
         mainGainNode.connect(audioCtx.destination);
         delayNode.connect(audioCtx.destination);
     }
 
-   // --- NUEVO MANEJO DEL MICRÓFONO EN VIVO (STREAMING) ---
     let micAudioElement = null;
     let mediaSource = null;
     let sourceBuffer = null;
@@ -940,11 +904,9 @@
             micAudioElement = new Audio();
             mediaSource = new MediaSource();
             micAudioElement.src = URL.createObjectURL(mediaSource);
-
             const track = audioCtx.createMediaElementSource(micAudioElement);
             track.connect(mainGainNode);
             track.connect(delayNode);
-
             mediaSource.addEventListener('sourceopen', () => {
                 sourceBuffer = mediaSource.addSourceBuffer('audio/webm; codecs="opus"');
                 sourceBuffer.addEventListener('updateend', () => {
@@ -955,7 +917,6 @@
             });
             micAudioElement.play().catch(e => console.log("Click en pantalla requerido"));
         }
-
         if (sourceBuffer && !sourceBuffer.updating && audioQueue.length === 0) {
             sourceBuffer.appendBuffer(new Uint8Array(audioData));
         } else {
@@ -965,50 +926,33 @@
     
     socket.on('voice-effect-changed', ({ effect, by }) => {
         currentVoiceEffectName = effect;
-        showVoiceFxNotification(effect, by);
-    });
-
-    function showVoiceFxNotification(effect, by) {
         const msg = document.createElement('div');
         msg.className = 'effect-toast';
         msg.style.borderLeft = '5px solid #a777e3';
         msg.style.background = 'rgba(20, 10, 35, 0.9)';
-        
         const fxNames = { normal: 'Voz Normal 🎙️', reverb: 'Eco de Concierto ✨', helium: 'Voz de Helio 🎈', monster: 'Voz de Monstruo 👹' };
         const name = fxNames[effect] || effect;
-        
-        if (effect === 'normal') {
-            msg.innerHTML = `🎙️ Voz restablecida a <strong>Normal</strong>`;
-        } else {
-            msg.innerHTML = `🔮 <strong>${escapeHtml(by)}</strong> activó: <strong style="color: #a777e3;">${name}</strong> en el micrófono`;
-            playBellSound();
-        }
-        
+        if (effect === 'normal') msg.innerHTML = `🎙️ Voz restablecida a <strong>Normal</strong>`;
+        else msg.innerHTML = `🔮 <strong>${escapeHtml(by)}</strong> activó: <strong style="color: #a777e3;">${name}</strong>`;
         document.body.appendChild(msg);
         setTimeout(() => msg.remove(), 4000);
-    }
+        if (effect !== 'normal') playBellSound();
+    });
 
-    // ---------- NUEVOS LISTENERS Y FUNCIONES: APLAUSÓMETRO Y CHACAL ----------
+    // ---------- APLAUSÓMETRO Y CHACAL ----------
     let chacalTimeout = null;
     let isChacalFanActive = false;
 
     socket.on('applause-update', (data) => {
-        if (data.currentSongClaps !== undefined) {
-            updateApplauseMeter(data.currentSongClaps);
-        }
+        if (data.currentSongClaps !== undefined) updateApplauseMeter(data.currentSongClaps);
         if (data.teamScores) {
             document.getElementById('scoreRed').innerText = data.teamScores.red || 0;
             document.getElementById('scoreBlue').innerText = data.teamScores.blue || 0;
         }
     });
 
-    socket.on('chacal-voted', ({ voter, voteCount, voteRatio }) => {
-        showChacalDisapproval(voter);
-    });
-
-    socket.on('chacal-overwhelming', ({ voteCount, totalParticipants }) => {
-        showChacalOverwhelming();
-    });
+    socket.on('chacal-voted', ({ voter }) => { showChacalDisapproval(voter); });
+    socket.on('chacal-overwhelming', () => { showChacalOverwhelming(); });
 
     function updateApplauseMeter(val) {
         const bar = document.getElementById('applauseMeterBar');
@@ -1016,49 +960,32 @@
         if (bar && text) {
             bar.style.height = val + '%';
             text.innerText = val + '%';
-            
-            if (val >= 80) {
-                bar.style.boxShadow = '0 0 25px #ffd700, 0 0 45px #ff0055';
-            } else {
-                bar.style.boxShadow = '0 0 15px #ffd700';
-            }
+            if (val >= 80) bar.style.boxShadow = '0 0 25px #ffd700, 0 0 45px #ff0055';
+            else bar.style.boxShadow = '0 0 15px #ffd700';
         }
-
-        if (val >= 85) {
-            showChacalFan();
-        } else if (val < 80) {
-            hideChacalFan();
-        }
+        if (val >= 85) showChacalFan();
+        else if (val < 80) hideChacalFan();
     }
 
     function showChacalDisapproval(voterName) {
-        if (isChacalFanActive) return; 
-        
+        if (isChacalFanActive) return;
         const widget = document.getElementById('chacalWidget');
         const text = document.getElementById('chacalText');
         const trumpet = document.getElementById('chacalTrumpet');
-        
         if (!widget || !text) return;
-        
         widget.style.display = 'block';
         widget.style.left = '20px';
         widget.style.bottom = '20px';
         widget.style.right = 'auto';
         widget.style.transform = 'scale(1)';
-        
         text.innerHTML = `⚠️ ¡${escapeHtml(voterName)} desafina! 🪈`;
-        
         playSyntheticZampogna();
-        
         let count = 0;
         const interval = setInterval(() => {
-            if (trumpet) {
-                trumpet.style.transform = `rotate(${count % 2 === 0 ? 12 : -12}deg)`;
-            }
+            if (trumpet) trumpet.style.transform = `rotate(${count % 2 === 0 ? 12 : -12}deg)`;
             count++;
             if (count > 6) clearInterval(interval);
         }, 150);
-
         clearTimeout(chacalTimeout);
         chacalTimeout = setTimeout(() => {
             widget.style.display = 'none';
@@ -1069,23 +996,16 @@
     function showChacalOverwhelming() {
         const widget = document.getElementById('chacalWidget');
         const text = document.getElementById('chacalText');
-        
         if (!widget || !text) return;
-        
         if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
-
         widget.style.display = 'block';
         widget.style.left = '50%';
         widget.style.bottom = '50%';
         widget.style.transform = 'translate(-50%, 50%) scale(2.2)';
-        
         text.innerHTML = `🚨 ¡Y FUEEERA! 🚨`;
-        
         playSyntheticZampogna();
         setTimeout(playYFueraSound, 300);
-
         document.body.style.animation = 'shake 0.5s infinite';
-        
         clearTimeout(chacalTimeout);
         chacalTimeout = setTimeout(() => {
             widget.style.display = 'none';
@@ -1097,21 +1017,16 @@
     function showChacalFan() {
         if (isChacalFanActive) return;
         isChacalFanActive = true;
-        
         const widget = document.getElementById('chacalWidget');
         const text = document.getElementById('chacalText');
-        
         if (!widget || !text) return;
-        
         widget.style.display = 'block';
         widget.style.left = 'auto';
         widget.style.right = '20px';
         widget.style.bottom = '20px';
         widget.style.transform = 'scale(1)';
-        
         text.innerHTML = `🌟 ¡Eso! 10 / 10 🔥`;
         text.style.borderColor = '#ffd700';
-        
         playBellSound();
     }
 
@@ -1121,7 +1036,7 @@
         const widget = document.getElementById('chacalWidget');
         const text = document.getElementById('chacalText');
         if (widget) widget.style.display = 'none';
-        if (text) text.style.borderColor = '#ffcc00'; 
+        if (text) text.style.borderColor = '#ffcc00';
     }
 
     function playSyntheticZampogna() {
@@ -1129,30 +1044,22 @@
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            
-            // Onda triangular para simular flauta/zampoña desafinada
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(330, ctx.currentTime); // Mi4
-            osc.frequency.linearRampToValueAtTime(261, ctx.currentTime + 1.2); // Caída a Do4 desafinado
-            
+            osc.frequency.setValueAtTime(330, ctx.currentTime);
+            osc.frequency.linearRampToValueAtTime(261, ctx.currentTime + 1.2);
             gain.gain.setValueAtTime(0, ctx.currentTime);
             gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.15);
             gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.8);
             gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
-            
             const filter = ctx.createBiquadFilter();
             filter.type = 'lowpass';
-            filter.frequency.value = 800; // Suaviza los armónicos
-            
+            filter.frequency.value = 800;
             osc.connect(filter);
             filter.connect(gain);
             gain.connect(ctx.destination);
-            
             osc.start();
             osc.stop(ctx.currentTime + 1.2);
-        } catch (e) {
-            console.error("Web Audio API failed:", e);
-        }
+        } catch (e) {}
     }
 
     function playYFueraSound() {
@@ -1172,22 +1079,40 @@
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            
             osc.type = 'sine';
             osc.frequency.setValueAtTime(880, ctx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.15);
             osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.4);
-            
             gain.gain.setValueAtTime(0.2, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-            
             osc.connect(gain);
             gain.connect(ctx.destination);
-            
             osc.start();
             osc.stop(ctx.currentTime + 0.5);
         } catch (e) {}
     }
+
+    // ---------- MODO DE JUEGO: BOTÓN FLOTANTE Y LISTENER ADICIONAL ----------
+    // Escuchar cambios de modo desde el servidor (por si otro cliente lo cambia)
+    socket.on('game-mode-changed', (mode) => {
+        currentGameMode = mode;
+        const btn = document.getElementById('modeToggleBtn');
+        if (mode === 'teams') btn.innerHTML = '🎮 Modo: Equipos';
+        else btn.innerHTML = '🎮 Modo: Arcade';
+        const scoreboard = document.getElementById('teamScoreboard');
+        if (scoreboard) scoreboard.style.display = mode === 'teams' ? 'flex' : 'none';
+    });
+
+    // Botón para cambiar modo (admin)
+    document.getElementById('modeToggleBtn').addEventListener('click', async () => {
+        const newMode = currentGameMode === 'teams' ? 'arcade' : 'teams';
+        const res = await fetch('/api/set-mode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: newMode, key: 'admin123' })
+        });
+        if (!res.ok) alert('No se pudo cambiar el modo');
+    });
 </script>
 </body>
 </html>
