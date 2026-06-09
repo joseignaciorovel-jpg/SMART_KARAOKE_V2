@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
-const os = require('os');
 const QRCode = require('qrcode');
 const axios = require('axios');
 
@@ -15,8 +14,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// El código QR y la URL de invitación se generarán de forma dinámica en cada petición en el endpoint /config
-
+// Configuración GIPHY
 const GIPHY_API_KEY = process.env.GIPHY_KEY || 'GlVGYHqc3SyXX10B0BwKz1TFyaMc11JB';
 
 app.get('/api/giphy', async (req, res) => {
@@ -31,81 +29,54 @@ app.get('/api/giphy', async (req, res) => {
     }
 });
 
-// ------------------------------------------------------------------
-// 👇 DESDE AQUÍ: PEGA ESTO NUEVO (APROXIMADAMENTE EN LA LÍNEA 35) 👇
-// ------------------------------------------------------------------
-
-// Nuevo endpoint para la voz del presentador con ElevenLabs
+// Endpoint ElevenLabs (voz premium)
 app.post('/api/hablar', async (req, res) => {
     const texto = req.body.texto;
-    
-    // Aquí es donde llama a las variables ocultas que pondrás en Railway
-    const apiKey = process.env.ELEVEN_API_KEY; 
-    
-    // Si tienes el ID de la voz, ponlo entre las comillas simples, si no, déjalo así para usar una variable en Railway
-    const voiceId = process.env.ELEVEN_VOICE_ID || 'pNInz6obbf5pNzyflT4L'; 
-
+    const apiKey = process.env.ELEVEN_API_KEY;
+    const voiceId = process.env.ELEVEN_VOICE_ID || 'pNInz6obbf5pNzyflT4L';
+    if (!apiKey) return res.status(500).json({ error: "Falta API Key de ElevenLabs" });
     try {
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
             method: 'POST',
-            headers: {
-                'xi-api-key': apiKey,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                text: texto,
-                model_id: 'eleven_multilingual_v2', // Vital para que hable buen español
-            })
+            headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: texto, model_id: 'eleven_multilingual_v2' })
         });
-
-        if (!response.ok) {
-            throw new Error(`Error de ElevenLabs: ${response.status} ${response.statusText}`);
-        }
-
+        if (!response.ok) throw new Error(`ElevenLabs error: ${response.status}`);
         const audioBuffer = await response.arrayBuffer();
         res.set('Content-Type', 'audio/mpeg');
         res.send(Buffer.from(audioBuffer));
-
     } catch (error) {
-        console.error("Fallo el audio premium de ElevenLabs:", error.message);
-        res.status(500).json({ error: "Fallo la síntesis" }); 
+        console.error("Error ElevenLabs:", error.message);
+        res.status(500).json({ error: "Fallo la síntesis" });
     }
 });
 
-// ------------------------------------------------------------------
-// 👆 HASTA AQUÍ LO NUEVO 👆
-// ------------------------------------------------------------------
-
+// Estado global
 let queue = [];
 let history = [];
 let currentSong = null;
-let participants = new Map();
-let singerScores = {};
-
-// Nuevas variables de estado para el Modo Desafío y el Aplausómetro
-let participantTeams = new Map(); // socket.id -> 'red' | 'blue'
+let participants = new Map();        // socket.id -> nombre
+let participantTeams = new Map();    // socket.id -> 'red' / 'blue'
+let singerScores = {};               // nombre -> puntos (ranking individual)
 let teamScores = { red: 0, blue: 0 };
-let currentSongClaps = 0; // Puntos del aplausómetro acumulados en la canción activa (0-100)
-let currentSongVotesChacal = new Set(); // socket.ids que votaron Chacal en esta canción
-let peakApplause = 0; // Pico máximo alcanzado del aplausómetro en esta canción
-
-// Estado para los Efectos de Voz
-let activeVoiceEffect = 'normal'; // 'normal' | 'reverb' | 'helium' | 'monster'
+let currentSongClaps = 0;
+let peakApplause = 0;
+let currentSongVotesChacal = new Set();
+let activeVoiceEffect = 'normal';
 let voiceEffectTimeout = null;
 
-// Decaimiento del Aplausómetro (4% por segundo)
+// NUEVO: Modo de juego (arcade o teams)
+let gameMode = 'teams';  // 'teams' por defecto, se puede cambiar desde la TV
+
+// Decaimiento del aplausómetro
 setInterval(() => {
     if (currentSong && currentSongClaps > 0) {
         currentSongClaps = Math.max(0, currentSongClaps - 4);
-        io.emit('applause-update', { 
-            currentSongClaps, 
-            peakApplause, 
-            teamScores 
-        });
+        io.emit('applause-update', { currentSongClaps, peakApplause, teamScores });
     }
 }, 1000);
 
-function getFullLeaderboard() {
+function getIndividualRanking() {
     return Object.entries(singerScores)
         .map(([name, score]) => ({ name, score }))
         .sort((a, b) => b.score - a.score);
@@ -113,21 +84,16 @@ function getFullLeaderboard() {
 
 function emitFullState() {
     const participantList = Array.from(participants.entries()).map(([id, name]) => ({
-        id,
-        name,
-        team: participantTeams.get(id) || null
+        id, name, team: participantTeams.get(id) || null
     }));
-    io.emit('state-update', { 
-        queue, 
-        currentSong, 
-        teamScores,
-        participantList,
-        peakApplause,
-        currentSongClaps,
-        activeVoiceEffect,
+    io.emit('state-update', {
+        queue, currentSong, teamScores, participantList,
+        peakApplause, currentSongClaps, activeVoiceEffect,
         chacalVoteCount: currentSongVotesChacal.size,
-        chacalVoteRatio: participants.size > 0 ? (currentSongVotesChacal.size / participants.size) : 0
+        chacalVoteRatio: participants.size > 0 ? (currentSongVotesChacal.size / participants.size) : 0,
+        gameMode
     });
+    io.emit('individual-ranking', getIndividualRanking());
 }
 
 function nextSong() {
@@ -139,11 +105,8 @@ function nextSong() {
     currentSongClaps = 0;
     currentSongVotesChacal.clear();
     peakApplause = 0;
-    
-    // Resetear efecto de voz
     activeVoiceEffect = 'normal';
     clearTimeout(voiceEffectTimeout);
-    
     emitFullState();
 }
 
@@ -166,18 +129,9 @@ async function addSong(videoUrl, requester) {
     } catch(e) { return null; }
 }
 
+// Socket.IO
 io.on('connection', (socket) => {
-    socket.on('ping', () => {});
-
-    socket.on('set-nickname', (nickname) => {
-        if (nickname) {
-            const cleanNick = nickname.trim();
-            participants.set(socket.id, cleanNick);
-            if (singerScores[cleanNick] === undefined) singerScores[cleanNick] = 0;
-            socket.emit('nickname-set', cleanNick);
-            emitFullState();
-        }
-    });
+    console.log('Cliente conectado:', socket.id);
 
     socket.on('join-team', ({ nickname, team }) => {
         if (nickname && (team === 'red' || team === 'blue')) {
@@ -191,97 +145,68 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Clics batched del aplausómetro
     socket.on('submit-claps', ({ claps, screams }) => {
-        const totalClicks = (claps || 0) + (screams || 0);
-        if (totalClicks <= 0) return;
-        
-        currentSongClaps = Math.min(100, currentSongClaps + totalClicks);
-        if (currentSongClaps > peakApplause) {
-            peakApplause = currentSongClaps;
-        }
+        const total = (claps || 0) + (screams || 0);
+        if (total <= 0) return;
 
+        // Aplausómetro
+        currentSongClaps = Math.min(100, currentSongClaps + total);
+        if (currentSongClaps > peakApplause) peakApplause = currentSongClaps;
+
+        // Ranking individual: suma al cantante actual
         if (currentSong) {
-            const singerNick = currentSong.requester;
-            let singerTeam = null;
-            for (const [id, nick] of participants.entries()) {
-                if (nick === singerNick) {
-                    singerTeam = participantTeams.get(id);
-                    break;
-                }
-            }
-            // Sumar puntos al cantante
-            singerScores[singerNick] = (singerScores[singerNick] || 0) + totalClicks;
-            
-            // Sumar puntos al equipo del cantante
-            if (singerTeam) {
-                teamScores[singerTeam] += totalClicks;
+            const singer = currentSong.requester;
+            singerScores[singer] = (singerScores[singer] || 0) + total;
+            io.emit('individual-ranking', getIndividualRanking());
+        }
+
+        // Modo equipos: suma puntos al equipo del usuario que reacciona
+        if (gameMode === 'teams') {
+            const userTeam = participantTeams.get(socket.id);
+            if (userTeam) {
+                teamScores[userTeam] += total;
+                io.emit('team-scores', teamScores);
             }
         }
 
-        io.emit('applause-update', { 
-            currentSongClaps, 
-            peakApplause, 
-            teamScores 
-        });
+        io.emit('applause-update', { currentSongClaps, peakApplause, teamScores });
     });
 
-    // Votación del Chacal de la Trompeta
     socket.on('vote-chacal', () => {
         if (!currentSong) return;
-        
         currentSongVotesChacal.add(socket.id);
-        
         const voteCount = currentSongVotesChacal.size;
         const totalParticipants = participants.size;
-        const voteRatio = totalParticipants > 0 ? (voteCount / totalParticipants) : 0;
-        
+        const voteRatio = totalParticipants > 0 ? voteCount / totalParticipants : 0;
         const sender = participants.get(socket.id) || 'Alguien';
-
-        io.emit('chacal-voted', { 
-            voter: sender,
-            voteCount, 
-            voteRatio 
-        });
-
+        io.emit('chacal-voted', { voter: sender, voteCount, voteRatio });
         if (voteRatio >= 0.5) {
-            io.emit('chacal-overwhelming', { 
-                voteCount, 
-                totalParticipants 
-            });
+            io.emit('chacal-overwhelming', { voteCount, totalParticipants });
             currentSongVotesChacal.clear();
         }
     });
 
-    // Modulador de voz del Cantante (Activo por 10 segundos)
     socket.on('trigger-voice-effect', (effectName) => {
         if (['normal', 'reverb', 'helium', 'monster'].includes(effectName)) {
             activeVoiceEffect = effectName;
             const sender = participants.get(socket.id) || 'Alguien';
-
-            io.emit('voice-effect-changed', { 
-                effect: effectName, 
-                by: sender 
-            });
-
+            io.emit('voice-effect-changed', { effect: effectName, by: sender });
             clearTimeout(voiceEffectTimeout);
             if (effectName !== 'normal') {
                 voiceEffectTimeout = setTimeout(() => {
                     activeVoiceEffect = 'normal';
-                    io.emit('voice-effect-changed', { 
-                        effect: 'normal', 
-                        by: 'Sistema' 
-                    });
-                }, 10000); // 10 segundos de efecto
+                    io.emit('voice-effect-changed', { effect: 'normal', by: 'Sistema' });
+                }, 10000);
             }
         }
     });
 
     socket.on('request-final-ranking', () => {
-        io.emit('show-final-ranking', { fullRanking: getFullLeaderboard(), top3: getFullLeaderboard().slice(0, 3) });
+        io.emit('show-final-ranking', {
+            individual: getIndividualRanking(),
+            team: gameMode === 'teams' ? teamScores : null
+        });
     });
-
-    socket.on('get-state', () => emitFullState());
 
     socket.on('add-song', async ({ url, nickname }) => {
         const song = await addSong(url, nickname);
@@ -289,22 +214,26 @@ io.on('connection', (socket) => {
         else socket.emit('error-msg', 'Enlace no válido');
     });
 
-    // --- MANEJO DE EFECTOS Y PUNTAJES ---
     socket.on('trigger-effect', (effectName) => {
         const sender = participants.get(socket.id);
-        if (currentSong && currentSong.requester) singerScores[currentSong.requester] = (singerScores[currentSong.requester] || 0) + 1;
+        if (currentSong && currentSong.requester) {
+            singerScores[currentSong.requester] = (singerScores[currentSong.requester] || 0) + 1;
+            io.emit('individual-ranking', getIndividualRanking());
+        }
         io.emit('effect-triggered', { effect: effectName, from: sender || 'Alguien' });
     });
 
     socket.on('send-sticker', (stickerUrl) => {
-        if (currentSong && currentSong.requester) singerScores[currentSong.requester] = (singerScores[currentSong.requester] || 0) + 2;
+        if (currentSong && currentSong.requester) {
+            singerScores[currentSong.requester] = (singerScores[currentSong.requester] || 0) + 2;
+            io.emit('individual-ranking', getIndividualRanking());
+        }
         io.emit('sticker-received', stickerUrl);
     });
 
-    // --- MANEJO DE INVITACIONES SOCIALES ---
     socket.on('get-participants', () => {
-        const participantsList = Array.from(participants.entries()).map(([id, name]) => ({ id, name }));
-        socket.emit('participants-list', participantsList);
+        const list = Array.from(participants.entries()).map(([id, name]) => ({ id, name }));
+        socket.emit('participants-list', list);
     });
 
     socket.on('invite-participant', ({ targetSocketId }) => {
@@ -316,13 +245,10 @@ io.on('connection', (socket) => {
         io.to(inviterId).emit('invitation-accepted', socket.id);
     });
 
-    // --- MANEJO DEL MICRÓFONO EN TIEMPO REAL ---
     socket.on('mic-audio', (audioData) => {
-        // Redirige los paquetes de audio a todos los demás dispositivos conectados (La TV)
         socket.broadcast.emit('mic-audio', audioData);
     });
 
-    // --- CONTROLES DE REPRODUCCIÓN ---
     socket.on('skip-song', nextSong);
     socket.on('prev-song', () => {
         if (history.length > 0) {
@@ -336,8 +262,8 @@ io.on('connection', (socket) => {
         emitFullState();
     });
     socket.on('clear-queue', () => {
-        queue = []; 
-        singerScores = {}; 
+        queue = [];
+        singerScores = {};
         teamScores = { red: 0, blue: 0 };
         participantTeams.clear();
         currentSongClaps = 0;
@@ -346,6 +272,12 @@ io.on('connection', (socket) => {
         activeVoiceEffect = 'normal';
         clearTimeout(voiceEffectTimeout);
         emitFullState();
+        io.emit('team-scores', teamScores);
+        io.emit('individual-ranking', []);
+    });
+
+    socket.on('request-scores', () => {
+        socket.emit('team-scores', teamScores);
     });
 
     socket.on('disconnect', () => {
@@ -353,6 +285,20 @@ io.on('connection', (socket) => {
         participantTeams.delete(socket.id);
         emitFullState();
     });
+});
+
+// Endpoint para cambiar modo de juego (solo desde la TV)
+app.post('/api/set-mode', (req, res) => {
+    const { mode, key } = req.body;
+    if (key !== 'admin123') return res.status(403).json({ error: 'Clave inválida' });
+    if (mode === 'arcade' || mode === 'teams') {
+        gameMode = mode;
+        io.emit('game-mode-changed', gameMode);
+        emitFullState();
+        res.json({ ok: true, mode });
+    } else {
+        res.status(400).json({ error: 'Modo no válido' });
+    }
 });
 
 app.get('/config', async (req, res) => {
