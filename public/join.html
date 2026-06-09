@@ -59,6 +59,7 @@
             background: rgba(25,25,38,0.7);
             cursor: pointer;
             font-weight: 600;
+            color: white;
         }
         .section-content { padding: 0 20px 20px 20px; }
         .collapsible-section.collapsed .section-content { display: none; }
@@ -74,15 +75,36 @@
             color: white;
             margin-bottom: 12px;
             cursor: pointer;
+            text-align: center;
         }
         .btn-primary { background: #5271FF; }
         .btn-success { background: #2BAE6A; }
         .clap-row { display: flex; gap: 12px; margin: 16px 0; }
-        .clap-btn { flex: 1; padding: 16px; border-radius: 56px; font-weight: 700; font-size: 1.2rem; background: #282839; }
+        .clap-btn { 
+            flex: 1; 
+            padding: 16px; 
+            border-radius: 56px; 
+            font-weight: 700; 
+            font-size: 1.2rem; 
+            background: #282839;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
         .energy-text { font-size: 0.8rem; text-align: center; color: #aaa; margin-bottom: 8px; }
         .giphy-results { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 12px; max-height: 200px; overflow-y: auto; }
-        .giphy-sticker { width: 100%; border-radius: 20px; cursor: pointer; }
-        input { width: 100%; padding: 14px; border-radius: 60px; background: #111118; border: none; color: white; margin-bottom: 12px; }
+        .giphy-sticker { width: 100%; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 60px; 
+            background: #111118; 
+            border: 1px solid #333; 
+            color: white; 
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        input::placeholder { color: #888; }
         .footer { margin-top: 30px; text-align: center; font-size: 0.7rem; color: #5a5a70; }
         #micFullscreen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -93,18 +115,19 @@
         .on-air { font-size: 2rem; color: #ff5e6b; margin-bottom: 30px; animation: pulse 1.5s infinite; }
         .mic-icon { font-size: 100px; margin: 30px; }
         @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; text-shadow: 0 0 8px #ff5e6b; } }
+        button:active { transform: scale(0.97); transition: 0.05s; }
     </style>
 </head>
 <body>
 <div id="loginSection" class="collapsible-section" style="max-width: 400px; margin: 20px auto;">
     <div class="logo">🔥🎤 FireVoice</div>
-    <input type="text" id="nicknameInput" placeholder="Tu nombre">
+    <input type="text" id="nicknameInput" placeholder="Tu nombre" autocomplete="off">
     <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-        <button id="selectRedBtn" style="flex:1; background:#1f1f2c; border:2px solid #ff5773; border-radius:60px; padding:12px;">🔴 Rojo</button>
-        <button id="selectBlueBtn" style="flex:1; background:#1f1f2c; border:2px solid #3b82f6; border-radius:60px; padding:12px;">🔵 Azul</button>
+        <button id="selectRedBtn" style="flex:1; background:#1f1f2c; border:2px solid #ff5773; border-radius:60px; padding:12px; color:white;">🔴 Rojo</button>
+        <button id="selectBlueBtn" style="flex:1; background:#1f1f2c; border:2px solid #3b82f6; border-radius:60px; padding:12px; color:white;">🔵 Azul</button>
     </div>
-    <button class="btn-full btn-primary" id="enterBtn">✨ Entrar</button>
-    <div id="secureWarning" style="display:none; background:#e34d4d; border-radius:60px; padding:10px; font-size:12px; text-align:center;">⚠️ HTTPS necesario para micrófono</div>
+    <button class="btn-full btn-primary" id="enterBtn">✨ Entrar a la fiesta</button>
+    <div id="secureWarning" style="display:none; background:#e34d4d; border-radius:60px; padding:10px; font-size:12px; text-align:center; margin-top:12px;">⚠️ HTTPS necesario para micrófono</div>
 </div>
 
 <div id="mainSection" style="display:none;">
@@ -145,15 +168,18 @@
                 <button class="btn-full voiceFx" data-fx="reverb" style="flex:1; background:#8855dd;">✨ Concierto</button>
                 <button class="btn-full voiceFx" data-fx="helium" style="flex:1; background:#ff9f4a;">🎈 Helio</button>
                 <button class="btn-full voiceFx" data-fx="monster" style="flex:1; background:#555;">👹 Monstruo</button>
-                <button class="btn-full voiceFx" data-fx="normal" style="flex:1;">🎙️ Normal</button>
+                <button class="btn-full voiceFx" data-fx="normal" style="flex:1; background:#2c2c3e;">🎙️ Normal</button>
             </div>
         </div>
     </div>
 
     <div class="collapsible-section collapsed">
-        <div class="section-header">🖼️ STICKERS <span class="chevron">▼</span></div>
+        <div class="section-header">🖼️ STICKERS ANIMADOS <span class="chevron">▼</span></div>
         <div class="section-content">
-            <div style="display: flex; gap: 8px;"><input type="text" id="giphySearch" placeholder="Buscar..."><button id="searchGiphyBtn">🔍</button></div>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="giphySearch" placeholder="Buscar sticker...">
+                <button class="btn-full" style="width: auto; padding: 0 20px;" id="searchGiphyBtn">🔍</button>
+            </div>
             <div class="giphy-results" id="giphyResults"></div>
         </div>
     </div>
@@ -217,7 +243,7 @@
         let remaining = Math.max(0, MAX_CLICKS - totalClicks);
         energySpan.innerText = `🎤 Energía: ${remaining} aplausos`;
         if (totalClicks >= MAX_CLICKS) {
-            energySpan.innerText = '⏳ Manos agotadas';
+            energySpan.innerText = '⏳ Manos agotadas - espera siguiente canción';
             document.getElementById('clapBtn').disabled = true;
             document.getElementById('screamBtn').disabled = true;
         } else {
@@ -263,7 +289,7 @@
     });
 
     document.getElementById('micBtn').onclick = async () => {
-        if (!navigator.mediaDevices || !window.isSecureContext) return alert("HTTPS necesario");
+        if (!navigator.mediaDevices || !window.isSecureContext) return alert("HTTPS necesario para el micrófono");
         try {
             micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             document.getElementById('micFullscreen').style.display = 'flex';
@@ -272,12 +298,12 @@
             mediaRecorder = new MediaRecorder(micStream);
             mediaRecorder.ondataavailable = e => { if(e.data.size) socket.emit('mic-audio', e.data); };
             mediaRecorder.start(250);
-        } catch(e) { alert("Error de micrófono"); }
+        } catch(e) { alert("Error de micrófono. Permisos requeridos."); }
     };
     document.getElementById('stopMicBtn').onclick = () => {
         if (isMicActive) {
             micStream.getTracks().forEach(t => t.stop());
-            mediaRecorder.stop();
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
             isMicActive = false;
         }
         document.getElementById('micFullscreen').style.display = 'none';
@@ -285,15 +311,32 @@
     };
     document.getElementById('inviteBtn').onclick = () => socket.emit('get-participants');
     socket.on('participants-list', (list) => {
-        let html = '<div style="position:fixed;top:20%;left:10%;width:80%;background:#222;border-radius:28px;padding:20px;z-index:2000;"><h3>Invitar a dúo</h3><ul>';
-        list.forEach(p => { if(p.id !== socket.id) html += `<li>${p.name} <button onclick="socket.emit('invite-participant', {targetSocketId:'${p.id}'})">Invitar</button></li>`; });
-        html += '</ul><button onclick="this.parentElement.remove()">Cerrar</button></div>';
-        document.body.insertAdjacentHTML('beforeend', html);
+        let modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '20%';
+        modal.style.left = '10%';
+        modal.style.width = '80%';
+        modal.style.background = '#222';
+        modal.style.borderRadius = '28px';
+        modal.style.padding = '20px';
+        modal.style.zIndex = '2000';
+        modal.style.border = '1px solid #555';
+        modal.innerHTML = '<h3 style="margin-bottom:15px;">🎤 Invitar a dúo</h3><ul style="list-style:none;" id="tempParticipantList"></ul><button class="btn-full" style="margin-top:15px; background:#444;" onclick="this.parentElement.remove()">Cerrar</button>';
+        document.body.appendChild(modal);
+        const ul = modal.querySelector('#tempParticipantList');
+        list.forEach(p => {
+            if(p.id !== socket.id) {
+                const li = document.createElement('li');
+                li.style.margin = '8px 0';
+                li.innerHTML = `${p.name} <button style="float:right; background:#2BAE6A; border:none; padding:6px 14px; border-radius:40px; color:white;" onclick="socket.emit('invite-participant', {targetSocketId:'${p.id}'}); this.closest('div').remove();">Invitar</button>`;
+                ul.appendChild(li);
+            }
+        });
     });
     socket.on('receive-invitation', ({ fromId, fromName }) => {
-        if(confirm(`${fromName} te invita a cantar. ¿Aceptas?`)) socket.emit('accept-invitation', fromId);
+        if(confirm(`${fromName} te invita a cantar a dúo. ¿Aceptas?`)) socket.emit('accept-invitation', fromId);
     });
-    socket.on('invitation-accepted', () => alert("¡Dúo activado!"));
+    socket.on('invitation-accepted', () => alert("¡Dúo activado! Ambos pueden cantar."));
 
     socket.on('state-update', (data) => {
         if (data.currentSong && data.currentSong.requester === myNickname) {
@@ -302,6 +345,7 @@
         } else singerPanel.style.display = 'none';
         if (data.currentSongClaps !== undefined) {
             totalClicks = 100 - data.currentSongClaps;
+            if (totalClicks < 0) totalClicks = 0;
             updateClickerUI();
         }
         if (data.gameMode) currentGameMode = data.gameMode;
@@ -333,14 +377,16 @@
             const res = await fetch(`/api/giphy?q=${encodeURIComponent(query)}`);
             const data = await res.json();
             container.innerHTML = '';
-            data.data.forEach(sticker => {
-                const img = document.createElement('img');
-                img.src = sticker.images.fixed_height.url;
-                img.className = 'giphy-sticker';
-                img.onclick = () => socket.emit('send-sticker', img.src);
-                container.appendChild(img);
-            });
-        } catch(e) { container.innerHTML = '<p>Error</p>'; }
+            if(data.data && data.data.length) {
+                data.data.forEach(sticker => {
+                    const img = document.createElement('img');
+                    img.src = sticker.images.fixed_height.url;
+                    img.className = 'giphy-sticker';
+                    img.onclick = () => socket.emit('send-sticker', img.src);
+                    container.appendChild(img);
+                });
+            } else container.innerHTML = '<p>Sin resultados</p>';
+        } catch(e) { container.innerHTML = '<p>Error al cargar stickers</p>'; }
     }
     document.getElementById('searchGiphyBtn').onclick = () => searchGiphy();
     window.searchGiphy = searchGiphy;
