@@ -71,62 +71,77 @@
             border-radius: 60px;
             font-weight: 600;
             border: none;
-            background: #2C2C3E;
             color: white;
             margin-bottom: 12px;
             cursor: pointer;
-            text-align: center;
+            background: #2C2C3E;
         }
         .btn-primary { background: #5271FF; }
         .btn-success { background: #2BAE6A; }
+        .btn-warning { background: #f39c12; color: #1e1a2f; }
         .clap-row { display: flex; gap: 12px; margin: 16px 0; }
-        .clap-btn { 
-            flex: 1; 
-            padding: 16px; 
-            border-radius: 56px; 
-            font-weight: 700; 
-            font-size: 1.2rem; 
+        .clap-btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 56px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            border: none;
             background: #282839;
             color: white;
-            border: none;
-            cursor: pointer;
         }
         .energy-text { font-size: 0.8rem; text-align: center; color: #aaa; margin-bottom: 8px; }
-        .giphy-results { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 12px; max-height: 200px; overflow-y: auto; }
-        .giphy-sticker { width: 100%; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
-        input { 
-            width: 100%; 
-            padding: 14px; 
-            border-radius: 60px; 
-            background: #111118; 
-            border: 1px solid #333; 
-            color: white; 
+        .giphy-results {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 10px;
+            margin-top: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .giphy-sticker { width: 100%; border-radius: 20px; cursor: pointer; }
+        input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 60px;
+            background: #111118;
+            border: 1px solid #2C2C3E;
+            color: white;
             margin-bottom: 12px;
             font-size: 1rem;
         }
-        input::placeholder { color: #888; }
+        input:focus { outline: none; border-color: #5271FF; }
         .footer { margin-top: 30px; text-align: center; font-size: 0.7rem; color: #5a5a70; }
         #micFullscreen {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #0a0a1a, #000); z-index: 3000;
-            flex-direction: column; align-items: center; justify-content: center;
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #0a0a1a, #000);
+            z-index: 3000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
         }
         .on-air { font-size: 2rem; color: #ff5e6b; margin-bottom: 30px; animation: pulse 1.5s infinite; }
         .mic-icon { font-size: 100px; margin: 30px; }
         @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; text-shadow: 0 0 8px #ff5e6b; } }
-        button:active { transform: scale(0.97); transition: 0.05s; }
+        .voice-fx-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .voice-fx-group .btn-full { flex: 1; margin-bottom: 0; }
     </style>
 </head>
 <body>
 <div id="loginSection" class="collapsible-section" style="max-width: 400px; margin: 20px auto;">
     <div class="logo">🔥🎤 FireVoice</div>
-    <input type="text" id="nicknameInput" placeholder="Tu nombre" autocomplete="off">
+    <input type="text" id="nicknameInput" placeholder="Tu nombre">
     <div style="display: flex; gap: 12px; margin-bottom: 20px;">
         <button id="selectRedBtn" style="flex:1; background:#1f1f2c; border:2px solid #ff5773; border-radius:60px; padding:12px; color:white;">🔴 Rojo</button>
         <button id="selectBlueBtn" style="flex:1; background:#1f1f2c; border:2px solid #3b82f6; border-radius:60px; padding:12px; color:white;">🔵 Azul</button>
     </div>
-    <button class="btn-full btn-primary" id="enterBtn">✨ Entrar a la fiesta</button>
+    <button class="btn-full btn-primary" id="enterBtn">✨ Entrar</button>
     <div id="secureWarning" style="display:none; background:#e34d4d; border-radius:60px; padding:10px; font-size:12px; text-align:center; margin-top:12px;">⚠️ HTTPS necesario para micrófono</div>
 </div>
 
@@ -139,6 +154,7 @@
         <div class="team-score blue-score"><div>🔵 AZUL</div><div class="points" id="bluePoints">0</div></div>
     </div>
 
+    <!-- Panel del cantante (cuando es su turno) -->
     <div class="collapsible-section" id="singerPanel" style="border:1px solid #2BAE6A; display:none;">
         <div class="section-header">🎤 TU MOMENTO <span class="chevron">▼</span></div>
         <div class="section-content">
@@ -149,6 +165,7 @@
         </div>
     </div>
 
+    <!-- Interacción en vivo -->
     <div class="collapsible-section">
         <div class="section-header">🔥 INTERACCIÓN EN VIVO <span class="chevron">▼</span></div>
         <div class="section-content">
@@ -161,28 +178,40 @@
         </div>
     </div>
 
+    <!-- AÑADIR CANCIÓN (RECUPERADO) -->
+    <div class="collapsible-section">
+        <div class="section-header">🎵 AÑADIR CANCIÓN <span class="chevron">▼</span></div>
+        <div class="section-content">
+            <input type="text" id="youtubeUrlInput" placeholder="Pega enlace de YouTube...">
+            <button class="btn-full btn-primary" id="addSongBtn">➕ Añadir a la cola</button>
+        </div>
+    </div>
+
+    <!-- Efectos de voz -->
     <div class="collapsible-section collapsed">
         <div class="section-header">🎛️ EFECTOS DE VOZ <span class="chevron">▼</span></div>
         <div class="section-content">
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn-full voiceFx" data-fx="reverb" style="flex:1; background:#8855dd;">✨ Concierto</button>
-                <button class="btn-full voiceFx" data-fx="helium" style="flex:1; background:#ff9f4a;">🎈 Helio</button>
-                <button class="btn-full voiceFx" data-fx="monster" style="flex:1; background:#555;">👹 Monstruo</button>
-                <button class="btn-full voiceFx" data-fx="normal" style="flex:1; background:#2c2c3e;">🎙️ Normal</button>
+            <div class="voice-fx-group">
+                <button class="btn-full voiceFx" data-fx="reverb" style="background:#8855dd;">✨ Concierto</button>
+                <button class="btn-full voiceFx" data-fx="helium" style="background:#ff9f4a;">🎈 Helio</button>
+                <button class="btn-full voiceFx" data-fx="monster" style="background:#555;">👹 Monstruo</button>
+                <button class="btn-full voiceFx" data-fx="normal" style="background:#2c2c3e;">🎙️ Normal</button>
             </div>
         </div>
     </div>
 
+    <!-- Stickers GIPHY -->
     <div class="collapsible-section collapsed">
         <div class="section-header">🖼️ STICKERS ANIMADOS <span class="chevron">▼</span></div>
         <div class="section-content">
             <div style="display: flex; gap: 8px;">
                 <input type="text" id="giphySearch" placeholder="Buscar sticker...">
-                <button class="btn-full" style="width: auto; padding: 0 20px;" id="searchGiphyBtn">🔍</button>
+                <button class="btn-full" id="searchGiphyBtn" style="width: auto; padding: 0 20px;">🔍</button>
             </div>
             <div class="giphy-results" id="giphyResults"></div>
         </div>
     </div>
+
     <div class="footer">FireVoice Karaoke · Mando interactivo</div>
 </div>
 
@@ -213,6 +242,7 @@
     const voiceEffectText = document.getElementById('voiceEffectText');
     const currentSongTitleSpan = document.getElementById('currentSongTitleTV');
 
+    // Colapsar secciones
     function toggleCollapse(el) { el.classList.toggle('collapsed'); }
     document.querySelectorAll('.collapsible-section .section-header').forEach(header => {
         header.onclick = (e) => toggleCollapse(header.parentElement);
@@ -288,8 +318,9 @@
         };
     });
 
+    // Micrófono
     document.getElementById('micBtn').onclick = async () => {
-        if (!navigator.mediaDevices || !window.isSecureContext) return alert("HTTPS necesario para el micrófono");
+        if (!navigator.mediaDevices || !window.isSecureContext) return alert("HTTPS necesario");
         try {
             micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             document.getElementById('micFullscreen').style.display = 'flex';
@@ -298,46 +329,43 @@
             mediaRecorder = new MediaRecorder(micStream);
             mediaRecorder.ondataavailable = e => { if(e.data.size) socket.emit('mic-audio', e.data); };
             mediaRecorder.start(250);
-        } catch(e) { alert("Error de micrófono. Permisos requeridos."); }
+        } catch(e) { alert("Error de micrófono"); }
     };
     document.getElementById('stopMicBtn').onclick = () => {
         if (isMicActive) {
             micStream.getTracks().forEach(t => t.stop());
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            mediaRecorder.stop();
             isMicActive = false;
         }
         document.getElementById('micFullscreen').style.display = 'none';
         mainDiv.style.display = 'block';
     };
+
+    // Invitaciones
     document.getElementById('inviteBtn').onclick = () => socket.emit('get-participants');
     socket.on('participants-list', (list) => {
-        let modal = document.createElement('div');
-        modal.style.position = 'fixed';
-        modal.style.top = '20%';
-        modal.style.left = '10%';
-        modal.style.width = '80%';
-        modal.style.background = '#222';
-        modal.style.borderRadius = '28px';
-        modal.style.padding = '20px';
-        modal.style.zIndex = '2000';
-        modal.style.border = '1px solid #555';
-        modal.innerHTML = '<h3 style="margin-bottom:15px;">🎤 Invitar a dúo</h3><ul style="list-style:none;" id="tempParticipantList"></ul><button class="btn-full" style="margin-top:15px; background:#444;" onclick="this.parentElement.remove()">Cerrar</button>';
-        document.body.appendChild(modal);
-        const ul = modal.querySelector('#tempParticipantList');
-        list.forEach(p => {
-            if(p.id !== socket.id) {
-                const li = document.createElement('li');
-                li.style.margin = '8px 0';
-                li.innerHTML = `${p.name} <button style="float:right; background:#2BAE6A; border:none; padding:6px 14px; border-radius:40px; color:white;" onclick="socket.emit('invite-participant', {targetSocketId:'${p.id}'}); this.closest('div').remove();">Invitar</button>`;
-                ul.appendChild(li);
-            }
-        });
+        let html = '<div style="position:fixed;top:20%;left:10%;width:80%;background:#222;border-radius:28px;padding:20px;z-index:2000;"><h3>Invitar a dúo</h3><ul>';
+        list.forEach(p => { if(p.id !== socket.id) html += `<li>${p.name} <button onclick="socket.emit('invite-participant', {targetSocketId:'${p.id}'})">Invitar</button></li>`; });
+        html += '</ul><button onclick="this.parentElement.remove()">Cerrar</button></div>';
+        document.body.insertAdjacentHTML('beforeend', html);
     });
     socket.on('receive-invitation', ({ fromId, fromName }) => {
-        if(confirm(`${fromName} te invita a cantar a dúo. ¿Aceptas?`)) socket.emit('accept-invitation', fromId);
+        if(confirm(`${fromName} te invita a cantar. ¿Aceptas?`)) socket.emit('accept-invitation', fromId);
     });
-    socket.on('invitation-accepted', () => alert("¡Dúo activado! Ambos pueden cantar."));
+    socket.on('invitation-accepted', () => alert("¡Dúo activado!"));
 
+    // AÑADIR CANCIÓN (evento recuperado)
+    document.getElementById('addSongBtn').onclick = () => {
+        const url = document.getElementById('youtubeUrlInput').value.trim();
+        if (url) {
+            socket.emit('add-song', { url: url, nickname: myNickname });
+            document.getElementById('youtubeUrlInput').value = '';
+        } else {
+            alert("Ingresa un enlace de YouTube");
+        }
+    };
+
+    // Estado del servidor
     socket.on('state-update', (data) => {
         if (data.currentSong && data.currentSong.requester === myNickname) {
             singerPanel.style.display = 'block';
@@ -345,7 +373,6 @@
         } else singerPanel.style.display = 'none';
         if (data.currentSongClaps !== undefined) {
             totalClicks = 100 - data.currentSongClaps;
-            if (totalClicks < 0) totalClicks = 0;
             updateClickerUI();
         }
         if (data.gameMode) currentGameMode = data.gameMode;
@@ -369,6 +396,7 @@
         scoreboardDiv.style.display = mode === 'teams' ? 'flex' : 'none';
     });
 
+    // Giphy
     async function searchGiphy(q) {
         const query = q || document.getElementById('giphySearch').value || 'party';
         const container = document.getElementById('giphyResults');
@@ -377,19 +405,20 @@
             const res = await fetch(`/api/giphy?q=${encodeURIComponent(query)}`);
             const data = await res.json();
             container.innerHTML = '';
-            if(data.data && data.data.length) {
-                data.data.forEach(sticker => {
-                    const img = document.createElement('img');
-                    img.src = sticker.images.fixed_height.url;
-                    img.className = 'giphy-sticker';
-                    img.onclick = () => socket.emit('send-sticker', img.src);
-                    container.appendChild(img);
-                });
-            } else container.innerHTML = '<p>Sin resultados</p>';
-        } catch(e) { container.innerHTML = '<p>Error al cargar stickers</p>'; }
+            data.data.forEach(sticker => {
+                const img = document.createElement('img');
+                img.src = sticker.images.fixed_height.url;
+                img.className = 'giphy-sticker';
+                img.onclick = () => socket.emit('send-sticker', img.src);
+                container.appendChild(img);
+            });
+        } catch(e) { container.innerHTML = '<p>Error</p>'; }
     }
     document.getElementById('searchGiphyBtn').onclick = () => searchGiphy();
     window.searchGiphy = searchGiphy;
+
+    // Solicitar estado inicial
+    socket.emit('get-state');
 </script>
 </body>
 </html>
