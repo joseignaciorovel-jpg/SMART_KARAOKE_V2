@@ -398,10 +398,11 @@
 
 <!-- CONTENEDOR PRINCIPAL DE LA TV -->
 <div class="tv-container">
+    <!-- HEADER: Logo, marcador equipos y QR (fila superior) -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-       <div class="logo-area" style="font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #FFB347, #FF6B6B); background-clip: text; -webkit-background-clip: text; color: transparent;">🎤 FireVoice</div>
+        <div class="logo-area" style="font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #FFB347, #FF6B6B); background-clip: text; -webkit-background-clip: text; color: transparent;">🎤 FireVoice</div>
         
-        <!-- MARCADOR DE EQUIPOS (ahora con ID para ocultar) -->
+        <!-- MARCADOR DE EQUIPOS -->
         <div id="teamScoreboard" style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 10px 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 5px 15px rgba(0,0,0,0.3); min-width: 280px; justify-content: space-around;">
             <div style="text-align: center;">
                 <h4 style="color: #ff4757; font-size: 11px; letter-spacing: 1px; margin-bottom: 2px;">🔴 ROJO</h4>
@@ -419,30 +420,44 @@
             <p style="color:white; font-size:12px; margin-top:5px;">📲 Escanea para unirse</p>
         </div>
     </div>
-    <div class="player-wrapper">
-        <div id="applauseMeterContainer">
-            <div id="applauseMeterBar">
-                <div id="applauseFill" style="height: 0%;"></div>
+
+    <!-- CONTENEDOR PRINCIPAL: DOS COLUMNAS -->
+    <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
+        <!-- COLUMNA IZQUIERDA: REPRODUCTOR + CONTROLES -->
+        <div>
+            <div class="player-wrapper">
+                <div id="applauseMeterContainer">
+                    <div id="applauseMeterBar">
+                        <div id="applauseFill" style="height: 0%;"></div>
+                    </div>
+                    <div id="applausePercent" style="font-size: 11px; font-weight: bold; margin-top: 10px; color: #ffd700;">0%</div>
+                </div>
+                <div id="youtubePlayer"></div>
             </div>
-            <div id="applausePercent" style="font-size: 11px; font-weight: bold; margin-top: 10px; color: #ffd700;">0%</div>
+            <div class="controls-container">
+                <button class="magic-btn" id="prevBtn" title="Atrás">⏮️</button>
+                <button class="magic-btn" id="playBtn" title="Play">▶️</button>
+                <button class="magic-btn" id="pauseBtn" title="Pausa">⏸️</button>
+                <button class="magic-btn" id="skipBtn" title="Siguiente">⏭️</button>
+                <button class="magic-btn" id="cinemaBtn" title="Modo Cine">🎬</button>
+                <button class="magic-btn" id="clearBtn" title="Vaciar Cola">🧹</button>
+            </div>
         </div>
-        <div id="youtubePlayer"></div>
-    </div>
-    <div class="controls-container">
-        <button class="magic-btn" id="prevBtn" title="Atrás">⏮️</button>
-        <button class="magic-btn" id="playBtn" title="Play">▶️</button>
-        <button class="magic-btn" id="pauseBtn" title="Pausa">⏸️</button>
-        <button class="magic-btn" id="skipBtn" title="Siguiente">⏭️</button>
-        <button class="magic-btn" id="cinemaBtn" title="Modo Cine">🎬</button>
-        <button class="magic-btn" id="clearBtn" title="Vaciar Cola">🧹</button>
-    </div>
-    <div class="now-playing-card" style="margin-top: 20px; background: rgba(255,255,255,0.05); border-radius: 28px; padding: 15px;">
-        <h3>🎵 Ahora suena:</h3>
-        <div id="currentSongDisplay">Esperando canciones...</div>
-    </div>
-    <div>
-        <h3>📋 Siguientes en la cola</h3>
-        <div id="queueList" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
+
+        <!-- COLUMNA DERECHA: QR (duplicado visible solo en esta columna? No, ya está arriba. Mejor movemos "Ahora suena" y "Cola" aquí, y el QR lo dejamos arriba como está. Pero si quieres el QR también aquí, puedo moverlo. Según tu petición: "Ahora suena" debajo del QR, y cola más abajo. El QR ya está arriba a la derecha. Para evitar duplicar, voy a poner aquí solo "Ahora suena" y "Cola", y el QR se queda en el header. Si quieres que el QR también esté aquí, dímelo. Por ahora, sigo tu instrucción literal: "Ahora suena" debajo del QR (el QR ya está arriba, así que aquí pongo "Ahora suena" y luego la cola). -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <!-- "Ahora suena" ahora en la columna derecha, justo debajo de donde está el QR en el header (visualmente debajo) -->
+            <div class="now-playing-card" style="background: rgba(255,255,255,0.05); border-radius: 28px; padding: 15px;">
+                <h3>🎵 Ahora suena:</h3>
+                <div id="currentSongDisplay">Esperando canciones...</div>
+            </div>
+
+            <!-- Cola de canciones debajo de "Ahora suena", ocupando el resto del espacio -->
+            <div style="flex: 1; display: flex; flex-direction: column; background: rgba(0,0,0,0.3); border-radius: 28px; padding: 15px; overflow: hidden;">
+                <h3>📋 Siguientes en la cola</h3>
+                <div id="queueList" style="flex: 1; overflow-y: auto; padding-right: 5px; max-height: none;"></div>
+            </div>
+        </div>
     </div>
 </div>
 <div id="fullscreenOverlay"></div>
