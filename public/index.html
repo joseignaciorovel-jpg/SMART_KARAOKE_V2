@@ -500,7 +500,7 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL: DOS COLUMNAS -->
+    <!-- CONTENEDOR PRINCIPAL: DOS COLUMNAS (con ID para manipular en modo cine) -->
     <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
         <!-- COLUMNA IZQUIERDA: REPRODUCTOR + CONTROLES -->
         <div>
@@ -528,8 +528,8 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA: AHORA SUENA + COLA -->
-        <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- COLUMNA DERECHA: AHORA SUENA + COLA (con ID para ocultar en modo cine) -->
+        <div id="rightColumn" style="display: flex; flex-direction: column; gap: 20px;">
             <div class="now-playing-card" style="background: rgba(255,255,255,0.05); border-radius: 28px; padding: 15px;">
                 <h3>🎵 Ahora suena:</h3>
                 <div id="currentSongDisplay">Esperando canciones...</div>
@@ -541,6 +541,14 @@
         </div>
     </div>
 </div>
+
+<!-- Cartel para modo cine: muestra la siguiente canción (oculto por defecto) -->
+<div id="cinemaNextSongCard" style="display: none; position: fixed; bottom: 90px; left: 20px; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); border-radius: 20px; padding: 10px 16px; z-index: 10002; pointer-events: none; border-left: 4px solid #ffcc33; max-width: 280px;">
+    <div style="font-size: 0.7rem; color: #ffcc33;">🎤 PRÓXIMO CANTANTE</div>
+    <div id="cinemaNextTitle" style="font-weight: bold; font-size: 1rem;">-</div>
+    <div id="cinemaNextRequester" style="font-size: 0.8rem; opacity: 0.8;">-</div>
+</div>
+
 <div id="fullscreenOverlay"></div>
 <div id="finalRankingOverlay">
     <h1 style="font-size: 3rem; margin-bottom: 10px;">🏆 PODIO KARAOKE 🏆</h1>
@@ -591,6 +599,7 @@
     let currentVideoId = null;
     let songCounter = 0;
     let currentGameMode = 'teams';
+    let currentQueue = [];  // <- NUEVO: almacena la cola actual para usarla en modo cine
 
     if (typeof confetti === 'undefined') window.confetti = () => console.log("mock confetti");
 
@@ -678,10 +687,29 @@
         if(d.qrImage) document.getElementById('qrImage').src = d.qrImage;
     }).catch(() => console.log("QR no disponible"));
 
+    // ---------- FUNCIÓN PARA ACTUALIZAR CARTEL EN MODO CINE (nueva) ----------
+    function updateCinemaNextSong() {
+        const card = document.getElementById('cinemaNextSongCard');
+        if (!card) return;
+        const nextSong = (currentQueue && currentQueue.length > 0) ? currentQueue[0] : null;
+        const titleElem = document.getElementById('cinemaNextTitle');
+        const reqElem = document.getElementById('cinemaNextRequester');
+        if (nextSong) {
+            titleElem.innerText = nextSong.title;
+            reqElem.innerText = `Solicitado por: ${nextSong.requester}`;
+        } else {
+            titleElem.innerText = 'No hay canciones en cola';
+            reqElem.innerText = '¡Añade una canción!';
+        }
+    }
+
     // ---------- SOCKET: ESTADO, COLA, CANCIONES ----------
     socket.on('state-update', (state) => {
+        // Guardar cola actual
+        currentQueue = state.queue || [];
         updateQueue(state.queue);
         updateNowPlaying(state.currentSong);
+        updateCinemaNextSong(); // actualizar cartel si está visible
         
         if (state.teamScores) {
             document.getElementById('scoreRed').innerText = state.teamScores.red || 0;
@@ -899,6 +927,8 @@
                 <button class="magic-btn" style="background:#ff4757; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>
             </div>
         `).join('');
+        // Actualizar cartel de modo cine si está visible
+        updateCinemaNextSong();
     }
 
     function updateNowPlaying(song) {
@@ -916,78 +946,93 @@
     document.getElementById('skipBtn').onclick = () => socket.emit('skip-song');
     document.getElementById('clearBtn').onclick = () => { if(confirm('¿Vaciar cola y puntajes?')) socket.emit('clear-queue'); };
     
-// --- MODO CINE CON REUBICACIÓN DE BARRA Y STATS ---
-let originalBarContainer = null;
-let originalStatsContainer = null;
+    // --- MODO CINE CON REUBICACIÓN DE BARRA Y STATS, Y OCULTAR/MOSTRAR COLUMNA DERECHA Y CARTEL ---
+    let originalBarContainer = null;
+    let originalStatsContainer = null;
 
-function moveToCinemaMode() {
-    const slimWrapper = document.querySelector('.slim-vertical-wrapper');
-    const statsSlim = document.querySelector('.stats-slim');
-    if (!slimWrapper || !statsSlim) return;
+    function moveToCinemaMode() {
+        const slimWrapper = document.querySelector('.slim-vertical-wrapper');
+        const statsSlim = document.querySelector('.stats-slim');
+        if (!slimWrapper || !statsSlim) return;
 
-    originalBarContainer = slimWrapper.parentNode;
-    originalStatsContainer = statsSlim.parentNode;
+        originalBarContainer = slimWrapper.parentNode;
+        originalStatsContainer = statsSlim.parentNode;
 
-    let cinemaOverlay = document.getElementById('cinemaOverlay');
-    if (!cinemaOverlay) {
-        cinemaOverlay = document.createElement('div');
-        cinemaOverlay.id = 'cinemaOverlay';
-        cinemaOverlay.style.position = 'fixed';
-        cinemaOverlay.style.top = '0';
-        cinemaOverlay.style.left = '0';
-        cinemaOverlay.style.width = '100%';
-        cinemaOverlay.style.height = '100%';
-        cinemaOverlay.style.pointerEvents = 'none';
-        cinemaOverlay.style.zIndex = '10001';
-        document.body.appendChild(cinemaOverlay);
+        let cinemaOverlay = document.getElementById('cinemaOverlay');
+        if (!cinemaOverlay) {
+            cinemaOverlay = document.createElement('div');
+            cinemaOverlay.id = 'cinemaOverlay';
+            cinemaOverlay.style.position = 'fixed';
+            cinemaOverlay.style.top = '0';
+            cinemaOverlay.style.left = '0';
+            cinemaOverlay.style.width = '100%';
+            cinemaOverlay.style.height = '100%';
+            cinemaOverlay.style.pointerEvents = 'none';
+            cinemaOverlay.style.zIndex = '10001';
+            document.body.appendChild(cinemaOverlay);
+        }
+        cinemaOverlay.appendChild(slimWrapper);
+        cinemaOverlay.appendChild(statsSlim);
+        slimWrapper.style.position = 'absolute';
+        slimWrapper.style.left = '20px';
+        slimWrapper.style.top = '50%';
+        slimWrapper.style.transform = 'translateY(-50%)';
+        statsSlim.style.position = 'absolute';
+        statsSlim.style.bottom = '20px';
+        statsSlim.style.left = '20px';
+        statsSlim.style.transform = 'none';
+
+        // Ocultar columna derecha y mostrar cartel
+        const rightCol = document.getElementById('rightColumn');
+        if (rightCol) rightCol.style.display = 'none';
+        const nextCard = document.getElementById('cinemaNextSongCard');
+        if (nextCard) {
+            nextCard.style.display = 'block';
+            updateCinemaNextSong(); // asegurar que tenga la info actual
+        }
     }
-    cinemaOverlay.appendChild(slimWrapper);
-    cinemaOverlay.appendChild(statsSlim);
-    slimWrapper.style.position = 'absolute';
-    slimWrapper.style.left = '20px';
-    slimWrapper.style.top = '50%';
-    slimWrapper.style.transform = 'translateY(-50%)';
-    statsSlim.style.position = 'absolute';
-    statsSlim.style.bottom = '20px';
-    statsSlim.style.left = '20px';
-    statsSlim.style.transform = 'none';
-}
 
-function restoreFromCinemaMode() {
-    const slimWrapper = document.querySelector('.slim-vertical-wrapper');
-    const statsSlim = document.querySelector('.stats-slim');
-    const cinemaOverlay = document.getElementById('cinemaOverlay');
-    if (!slimWrapper || !statsSlim || !cinemaOverlay) return;
+    function restoreFromCinemaMode() {
+        const slimWrapper = document.querySelector('.slim-vertical-wrapper');
+        const statsSlim = document.querySelector('.stats-slim');
+        const cinemaOverlay = document.getElementById('cinemaOverlay');
+        if (!slimWrapper || !statsSlim || !cinemaOverlay) return;
 
-    slimWrapper.style.position = '';
-    slimWrapper.style.left = '';
-    slimWrapper.style.top = '';
-    slimWrapper.style.transform = '';
-    statsSlim.style.position = '';
-    statsSlim.style.bottom = '';
-    statsSlim.style.left = '';
-    statsSlim.style.transform = '';
+        slimWrapper.style.position = '';
+        slimWrapper.style.left = '';
+        slimWrapper.style.top = '';
+        slimWrapper.style.transform = '';
+        statsSlim.style.position = '';
+        statsSlim.style.bottom = '';
+        statsSlim.style.left = '';
+        statsSlim.style.transform = '';
 
-    if (originalBarContainer) originalBarContainer.appendChild(slimWrapper);
-    if (originalStatsContainer) originalStatsContainer.appendChild(statsSlim);
-    cinemaOverlay.remove();
-}
+        if (originalBarContainer) originalBarContainer.appendChild(slimWrapper);
+        if (originalStatsContainer) originalStatsContainer.appendChild(statsSlim);
+        cinemaOverlay.remove();
 
-document.getElementById('cinemaBtn').onclick = () => {
-    const body = document.body;
-    if (!body.classList.contains('cinema-mode')) {
-        body.classList.add('cinema-mode');
-        document.documentElement.requestFullscreen?.() || document.documentElement.webkitRequestFullscreen?.();
-        document.getElementById('cinemaBtn').innerHTML = "🚪 Salir Modo Cine";
-        moveToCinemaMode();
-    } else {
-        body.classList.remove('cinema-mode');
-        document.exitFullscreen?.() || document.webkitExitFullscreen?.();
-        document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine";
-        restoreFromCinemaMode();
+        // Mostrar columna derecha y ocultar cartel
+        const rightCol = document.getElementById('rightColumn');
+        if (rightCol) rightCol.style.display = '';
+        const nextCard = document.getElementById('cinemaNextSongCard');
+        if (nextCard) nextCard.style.display = 'none';
     }
-};
-    document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && !document.webkitFullscreenElement) { document.body.classList.remove('cinema-mode'); document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine"; } });
+
+    document.getElementById('cinemaBtn').onclick = () => {
+        const body = document.body;
+        if (!body.classList.contains('cinema-mode')) {
+            body.classList.add('cinema-mode');
+            document.documentElement.requestFullscreen?.() || document.documentElement.webkitRequestFullscreen?.();
+            document.getElementById('cinemaBtn').innerHTML = "🚪 Salir Modo Cine";
+            moveToCinemaMode();
+        } else {
+            body.classList.remove('cinema-mode');
+            document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+            document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine";
+            restoreFromCinemaMode();
+        }
+    };
+    document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && !document.webkitFullscreenElement) { document.body.classList.remove('cinema-mode'); document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine"; restoreFromCinemaMode(); } });
     
     socket.emit('get-state');
 
