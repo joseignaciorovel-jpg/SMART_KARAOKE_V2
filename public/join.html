@@ -178,7 +178,7 @@
         </div>
     </div>
 
-    <!-- AÑADIR CANCIÓN (RECUPERADO) -->
+    <!-- Añadir canción -->
     <div class="collapsible-section">
         <div class="section-header">🎵 AÑADIR CANCIÓN <span class="chevron">▼</span></div>
         <div class="section-content">
@@ -209,6 +209,15 @@
                 <button class="btn-full" id="searchGiphyBtn" style="width: auto; padding: 0 20px;">🔍</button>
             </div>
             <div class="giphy-results" id="giphyResults"></div>
+        </div>
+    </div>
+
+    <!-- NUEVO: Ranking (collapsible) -->
+    <div class="collapsible-section collapsed">
+        <div class="section-header">🏆 RANKING <span class="chevron">▼</span></div>
+        <div class="section-content">
+            <button class="btn-full" id="rankingBtn" style="background: #9b59b6;">📊 Ver Ranking Final</button>
+            <p class="energy-text" style="margin-top: 8px;">Muestra el podio de la noche en la pantalla principal</p>
         </div>
     </div>
 
@@ -318,7 +327,6 @@
         };
     });
 
-    // Micrófono
     document.getElementById('micBtn').onclick = async () => {
         if (!navigator.mediaDevices || !window.isSecureContext) return alert("HTTPS necesario");
         try {
@@ -340,8 +348,6 @@
         document.getElementById('micFullscreen').style.display = 'none';
         mainDiv.style.display = 'block';
     };
-
-    // Invitaciones
     document.getElementById('inviteBtn').onclick = () => socket.emit('get-participants');
     socket.on('participants-list', (list) => {
         let html = '<div style="position:fixed;top:20%;left:10%;width:80%;background:#222;border-radius:28px;padding:20px;z-index:2000;"><h3>Invitar a dúo</h3><ul>';
@@ -354,7 +360,7 @@
     });
     socket.on('invitation-accepted', () => alert("¡Dúo activado!"));
 
-    // AÑADIR CANCIÓN (evento recuperado)
+    // Añadir canción
     document.getElementById('addSongBtn').onclick = () => {
         const url = document.getElementById('youtubeUrlInput').value.trim();
         if (url) {
@@ -365,7 +371,11 @@
         }
     };
 
-    // Estado del servidor
+    // Ranking button (nuevo)
+    document.getElementById('rankingBtn').onclick = () => {
+        socket.emit('request-final-ranking');
+    };
+
     socket.on('state-update', (data) => {
         if (data.currentSong && data.currentSong.requester === myNickname) {
             singerPanel.style.display = 'block';
@@ -396,7 +406,6 @@
         scoreboardDiv.style.display = mode === 'teams' ? 'flex' : 'none';
     });
 
-    // Giphy
     async function searchGiphy(q) {
         const query = q || document.getElementById('giphySearch').value || 'party';
         const container = document.getElementById('giphyResults');
@@ -417,7 +426,6 @@
     document.getElementById('searchGiphyBtn').onclick = () => searchGiphy();
     window.searchGiphy = searchGiphy;
 
-    // Solicitar estado inicial
     socket.emit('get-state');
 </script>
 </body>
