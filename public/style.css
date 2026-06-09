@@ -289,3 +289,53 @@ button:active { transform: scale(0.97); }
         max-height: 50vh;
     }
 }
+/* Contenedor de dos columnas con grid */
+.two-columns {
+    display: grid;
+    grid-template-columns: 1fr 340px; /* Ajusta el ancho de la columna derecha */
+    gap: 24px;
+    align-items: start; /* Para que ambas columnas comiencen arriba */
+}
+
+/* Columna derecha: flex vertical */
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Ajustar el QR para que no sea enorme */
+.qr-area img {
+    width: 100px !important;
+    height: auto !important;
+    margin: 0 auto;
+}
+
+/* "Ahora suena" compacto */
+.now-playing-card {
+    margin-top: 0 !important;
+    padding: 12px;
+}
+
+/* Cola con altura máxima = altura del video (se ajusta automáticamente) */
+.queue-section {
+    flex: 1; /* Ocupa el espacio restante */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: rgba(0,0,0,0.3);
+    border-radius: 20px;
+    padding: 12px;
+}
+
+#queueList {
+    flex: 1;
+    overflow-y: auto;
+    max-height: none; /* Para que respete el contenedor */
+}
+
+/* Opcional: unificar botones de control como querías */
+.controls-container .magic-btn {
+    background: #2C2C3E !important;
+    color: white !important;
+}
