@@ -74,7 +74,7 @@
     <div class="collapsible-section">
         <div class="section-header">🔥 INTERACCIÓN EN VIVO <span class="chevron">▼</span></div>
         <div class="section-content">
-            <div class="energy-text" id="energyText">🎤 Energía: 100 aplausos</div>
+            <div class="energy-text" id="energyText">🎤 Energía: 1000 aplausos</div>
             <div class="clap-row">
                 <button class="clap-btn" id="clapBtn">👏 APLAUDIR</button>
                 <button class="clap-btn" id="screamBtn">🗣️ GRITAR</button>
@@ -141,15 +141,14 @@
 </div>
 
 <script>
-    const socket = io({ transports: ['websocket'] });
+    const socket = io();
     let myNickname = '', myTeam = 'red';
-    let totalClicks = 0, MAX_CLICKS = 100;
+    let totalClicks = 0, MAX_CLICKS = 1000;  // Límite aumentado a 1000
     let clickBuffer = { claps: 0, screams: 0 };
     let isMicActive = false, mediaRecorder, micStream;
     let currentGameMode = 'teams';
-    let activeSongId = null;  // Para detectar cambio de canción
+    let activeSongId = null;
 
-    // Elementos
     const loginDiv = document.getElementById('loginSection');
     const mainDiv = document.getElementById('mainSection');
     const scoreboardDiv = document.getElementById('scoreboard');
@@ -162,7 +161,6 @@
     const voiceEffectText = document.getElementById('voiceEffectText');
     const currentSongTitleSpan = document.getElementById('currentSongTitleTV');
 
-    // Colapsar
     function toggleCollapse(el) { el.classList.toggle('collapsed'); }
     document.querySelectorAll('.collapsible-section .section-header').forEach(header => {
         header.onclick = (e) => toggleCollapse(header.parentElement);
@@ -205,21 +203,15 @@
     function registerClick(type) {
         if (totalClicks >= MAX_CLICKS) return;
         if (navigator.vibrate) navigator.vibrate(20);
-        if (type === 'clap') clickBuffer.claps++;
-        else clickBuffer.screams++;
+        let claps = 0, screams = 0;
+        if (type === 'clap') claps = 1;
+        else screams = 1;
+        socket.emit('submit-claps', { claps, screams });
         totalClicks++;
         updateClickerUI();
     }
     document.getElementById('clapBtn').onclick = () => registerClick('clap');
     document.getElementById('screamBtn').onclick = () => registerClick('scream');
-
-    setInterval(() => {
-        if (clickBuffer.claps || clickBuffer.screams) {
-            socket.emit('submit-claps', clickBuffer);
-            clickBuffer.claps = 0;
-            clickBuffer.screams = 0;
-        }
-    }, 300);
 
     document.getElementById('chacalBtn').onclick = () => {
         socket.emit('vote-chacal');
@@ -229,7 +221,6 @@
         setTimeout(() => { btn.disabled = false; btn.innerText = '🪈 Llamar al Chacal'; }, 4000);
     };
 
-    // Reacciones rápidas
     document.querySelectorAll('.effect-btn').forEach(btn => {
         btn.onclick = () => {
             const effect = btn.dataset.effect;
@@ -239,7 +230,6 @@
         };
     });
 
-    // Añadir canción manual
     document.getElementById('addSongBtn').onclick = () => {
         const url = document.getElementById('youtubeUrlInput').value.trim();
         if (url) {
@@ -250,10 +240,8 @@
         }
     };
 
-    // Ranking
     document.getElementById('rankingBtn').onclick = () => socket.emit('request-final-ranking');
 
-    // Micrófono
     document.getElementById('micBtn').onclick = async () => {
         if (!navigator.mediaDevices || !window.isSecureContext) return alert("HTTPS necesario");
         try {
@@ -276,7 +264,6 @@
         mainDiv.style.display = 'block';
     };
 
-    // Invitaciones
     document.getElementById('inviteBtn').onclick = () => socket.emit('get-participants');
     socket.on('participants-list', (list) => {
         let html = '<div style="position:fixed;top:20%;left:10%;width:80%;background:#222;border-radius:28px;padding:20px;z-index:2000;"><h3>Invitar a dúo</h3><ul>';
@@ -289,14 +276,12 @@
     });
     socket.on('invitation-accepted', () => alert("¡Dúo activado!"));
 
-    // Estado (corregido: sin sincronización de totalClicks con currentSongClaps)
     socket.on('state-update', (data) => {
         if (data.currentSong && data.currentSong.requester === myNickname) {
             singerPanel.style.display = 'block';
             currentSongTitleSpan.innerText = data.currentSong.title;
         } else singerPanel.style.display = 'none';
 
-        // Detectar cambio de canción para reiniciar contador de clics local
         if (data.currentSong) {
             const newSongId = data.currentSong.id;
             if (newSongId !== activeSongId) {
@@ -328,7 +313,6 @@
         scoreboardDiv.style.display = mode === 'teams' ? 'flex' : 'none';
     });
 
-    // Giphy
     async function searchGiphy(q) {
         const query = q || document.getElementById('giphySearch').value || 'party';
         const container = document.getElementById('giphyResults');
