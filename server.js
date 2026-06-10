@@ -4,7 +4,6 @@ const socketIo = require('socket.io');
 const path = require('path');
 const QRCode = require('qrcode');
 const axios = require('axios');
-const ytSearch = require('yt-search');   // <-- NUEVO: para buscar canciones
 
 const app = express();
 const server = http.createServer(app);
@@ -15,7 +14,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// Configuración GIPHY
 const GIPHY_API_KEY = process.env.GIPHY_KEY || 'GlVGYHqc3SyXX10B0BwKz1TFyaMc11JB';
 
 app.get('/api/giphy', async (req, res) => {
@@ -27,25 +25,6 @@ app.get('/api/giphy', async (req, res) => {
     } catch (error) {
         console.error("Error Giphy:", error.message);
         res.status(500).json({ error: 'Error al conectar con Giphy' });
-    }
-});
-
-// ========= NUEVO ENDPOINT: BÚSQUEDA EN YOUTUBE (para el mando) =========
-app.get('/api/search-youtube', async (req, res) => {
-    const query = req.query.q;
-    if (!query) return res.status(400).json({ error: 'Se requiere término de búsqueda' });
-    try {
-        const result = await ytSearch(query);
-        // Devolver los primeros 8 videos con título y URL
-        const videos = result.videos.slice(0, 8).map(video => ({
-            title: video.title,
-            url: video.url,
-            videoId: video.videoId
-        }));
-        res.json(videos);
-    } catch (error) {
-        console.error("Error en búsqueda YouTube:", error.message);
-        res.status(500).json({ error: 'Error al buscar en YouTube' });
     }
 });
 
@@ -75,32 +54,24 @@ app.post('/api/hablar', async (req, res) => {
 let queue = [];
 let history = [];
 let currentSong = null;
-let participants = new Map();        // socket.id -> nombre
-let participantTeams = new Map();    // socket.id -> 'red' / 'blue'
-let singerScores = {};               // nombre -> puntos (ranking individual)
+let participants = new Map();
+let participantTeams = new Map();
+let singerScores = {};
 let teamScores = { red: 0, blue: 0 };
 let currentSongClaps = 0;
 let peakApplause = 0;
 let currentSongVotesChacal = new Set();
 let activeVoiceEffect = 'normal';
 let voiceEffectTimeout = null;
-
-// Modo de juego (arcade o teams)
 let gameMode = 'teams';
 
-// Sistema de decaimiento (estilo Guitar Hero)
+// Decaimiento estilo Guitar Hero
 let decayTimeout = null;
 let decayInterval = null;
 
 function stopDecay() {
-    if (decayInterval) {
-        clearInterval(decayInterval);
-        decayInterval = null;
-    }
-    if (decayTimeout) {
-        clearTimeout(decayTimeout);
-        decayTimeout = null;
-    }
+    if (decayInterval) { clearInterval(decayInterval); decayInterval = null; }
+    if (decayTimeout) { clearTimeout(decayTimeout); decayTimeout = null; }
 }
 
 function startDecay() {
@@ -125,32 +96,18 @@ function resetDecay() {
     startDecay();
 }
 
-// ========= FUNCIONES AUXILIARES =========
 function getIndividualRanking() {
-    return Object.entries(singerScores)
-        .map(([name, score]) => ({ name, score }))
-        .sort((a, b) => b.score - a.score);
+    return Object.entries(singerScores).map(([name, score]) => ({ name, score })).sort((a,b) => b.score - a.score);
 }
 
 function emitFullState() {
-    const participantList = Array.from(participants.entries()).map(([id, name]) => ({
-        id, name, team: participantTeams.get(id) || null
-    }));
-    io.emit('state-update', {
-        queue, currentSong, teamScores, participantList,
-        peakApplause, currentSongClaps, activeVoiceEffect,
-        chacalVoteCount: currentSongVotesChacal.size,
-        chacalVoteRatio: participants.size > 0 ? (currentSongVotesChacal.size / participants.size) : 0,
-        gameMode
-    });
+    const participantList = Array.from(participants.entries()).map(([id, name]) => ({ id, name, team: participantTeams.get(id) || null }));
+    io.emit('state-update', { queue, currentSong, teamScores, participantList, peakApplause, currentSongClaps, activeVoiceEffect, chacalVoteCount: currentSongVotesChacal.size, chacalVoteRatio: participants.size > 0 ? (currentSongVotesChacal.size / participants.size) : 0, gameMode });
     io.emit('individual-ranking', getIndividualRanking());
 }
 
 function nextSong() {
-    if (currentSong) {
-        history.push(currentSong);
-        if (history.length > 20) history.shift();
-    }
+    if (currentSong) { history.push(currentSong); if (history.length > 20) history.shift(); }
     currentSong = queue.length > 0 ? queue.shift() : null;
     currentSongClaps = 0;
     currentSongVotesChacal.clear();
@@ -166,13 +123,7 @@ async function addSong(videoUrl, requester) {
     if (!videoId) return null;
     try {
         const meta = (await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)).data;
-        const newSong = {
-            id: Date.now().toString(),
-            videoId,
-            title: meta.title,
-            thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-            requester
-        };
+        const newSong = { id: Date.now().toString(), videoId, title: meta.title, thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, requester };
         queue.push(newSong);
         if (!currentSong) nextSong();
         else emitFullState();
@@ -180,7 +131,6 @@ async function addSong(videoUrl, requester) {
     } catch(e) { return null; }
 }
 
-// ========= SOCKET.IO =========
 io.on('connection', (socket) => {
     console.log('Cliente conectado:', socket.id);
 
@@ -199,24 +149,16 @@ io.on('connection', (socket) => {
     socket.on('submit-claps', ({ claps, screams }) => {
         const total = (claps || 0) + (screams || 0);
         if (total <= 0) return;
-
         currentSongClaps = Math.min(100, currentSongClaps + total);
         if (currentSongClaps > peakApplause) peakApplause = currentSongClaps;
-
         if (currentSong) {
-            const singer = currentSong.requester;
-            singerScores[singer] = (singerScores[singer] || 0) + total;
+            singerScores[currentSong.requester] = (singerScores[currentSong.requester] || 0) + total;
             io.emit('individual-ranking', getIndividualRanking());
         }
-
         if (gameMode === 'teams') {
             const userTeam = participantTeams.get(socket.id);
-            if (userTeam) {
-                teamScores[userTeam] += total;
-                io.emit('team-scores', teamScores);
-            }
+            if (userTeam) { teamScores[userTeam] += total; io.emit('team-scores', teamScores); }
         }
-
         io.emit('applause-update', { currentSongClaps, peakApplause, teamScores });
         resetDecay();
     });
@@ -225,17 +167,17 @@ io.on('connection', (socket) => {
         if (!currentSong) return;
         currentSongVotesChacal.add(socket.id);
         const voteCount = currentSongVotesChacal.size;
-        const totalParticipants = participants.size;
-        const voteRatio = totalParticipants > 0 ? voteCount / totalParticipants : 0;
+        const voteRatio = participants.size > 0 ? voteCount / participants.size : 0;
         const sender = participants.get(socket.id) || 'Alguien';
         io.emit('chacal-voted', { voter: sender, voteCount, voteRatio });
         if (voteRatio >= 0.5) {
-            io.emit('chacal-overwhelming', { voteCount, totalParticipants });
+            io.emit('chacal-overwhelming', { voteCount, totalParticipants: participants.size });
             currentSongVotesChacal.clear();
         }
     });
 
     socket.on('trigger-voice-effect', (effectName) => {
+        // Mantenido por compatibilidad, pero ya no se usa en el mando
         if (['normal', 'reverb', 'helium', 'monster'].includes(effectName)) {
             activeVoiceEffect = effectName;
             const sender = participants.get(socket.id) || 'Alguien';
@@ -251,10 +193,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('request-final-ranking', () => {
-        io.emit('show-final-ranking', {
-            individual: getIndividualRanking(),
-            team: gameMode === 'teams' ? teamScores : null
-        });
+        io.emit('show-final-ranking', { individual: getIndividualRanking(), team: gameMode === 'teams' ? teamScores : null });
     });
 
     socket.on('add-song', async ({ url, nickname }) => {
@@ -338,7 +277,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// Endpoint para cambiar modo de juego (solo desde la TV)
 app.post('/api/set-mode', (req, res) => {
     const { mode, key } = req.body;
     if (key !== 'admin123') return res.status(403).json({ error: 'Clave inválida' });
