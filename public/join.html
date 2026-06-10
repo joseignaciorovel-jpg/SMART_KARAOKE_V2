@@ -6,186 +6,39 @@
     <title>FireVoice - Mando Karaoke</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            background: #0B0B12;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
-            color: #F0F0F4;
-            padding: 20px 16px 80px;
-        }
-        .logo {
-            font-size: 1.8rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #FFB347, #FF6B6B);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-        .scoreboard {
-            background: rgba(0,0,0,0.4);
-            border-radius: 60px;
-            padding: 12px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: #0B0B12; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif; color: #F0F0F4; padding: 20px 16px 80px; }
+        .logo { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #FFB347, #FF6B6B); background-clip: text; -webkit-background-clip: text; color: transparent; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+        .scoreboard { background: rgba(0,0,0,0.4); border-radius: 60px; padding: 12px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.1); }
         .team-score { text-align: center; flex: 1; }
         .team-score .points { font-size: 1.8rem; font-weight: 800; }
         .red-score .points { color: #ff5773; }
         .blue-score .points { color: #3b82f6; }
         .vs-divider { padding: 0 8px; color: #aaa; }
-        .collapsible-section {
-            border-radius: 28px;
-            background: rgba(12, 12, 20, 0.6);
-            margin-bottom: 16px;
-            border: 1px solid rgba(255,255,255,0.05);
-            overflow: hidden;
-        }
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            padding: 18px 20px;
-            background: rgba(25,25,38,0.7);
-            cursor: pointer;
-            font-weight: 600;
-            color: white;
-        }
+        .collapsible-section { border-radius: 28px; background: rgba(12,12,20,0.6); margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; }
+        .section-header { display: flex; justify-content: space-between; padding: 18px 20px; background: rgba(25,25,38,0.7); cursor: pointer; font-weight: 600; color: white; }
         .section-content { padding: 0 20px 20px 20px; }
         .collapsible-section.collapsed .section-content { display: none; }
         .collapsible-section.collapsed .chevron { transform: rotate(-90deg); }
         .chevron { transition: 0.25s; }
-        .btn-full {
-            width: 100%;
-            padding: 14px;
-            border-radius: 60px;
-            font-weight: 600;
-            border: none;
-            color: white;
-            margin-bottom: 12px;
-            cursor: pointer;
-            background: #2C2C3E;
-        }
+        .btn-full { width: 100%; padding: 14px; border-radius: 60px; font-weight: 600; border: none; color: white; margin-bottom: 12px; cursor: pointer; background: #2C2C3E; }
         .btn-primary { background: #5271FF; }
         .btn-success { background: #2BAE6A; }
-        .btn-warning { background: #f39c12; color: #1e1a2f; }
         .clap-row { display: flex; gap: 12px; margin: 16px 0; }
-        .clap-btn {
-            flex: 1;
-            padding: 16px;
-            border-radius: 56px;
-            font-weight: 700;
-            font-size: 1.2rem;
-            border: none;
-            background: #282839;
-            color: white;
-        }
+        .clap-btn { flex: 1; padding: 16px; border-radius: 56px; font-weight: 700; font-size: 1.2rem; border: none; background: #282839; color: white; }
         .energy-text { font-size: 0.8rem; text-align: center; color: #aaa; margin-bottom: 8px; }
-        .giphy-results {
-            display: grid;
-            grid-template-columns: repeat(3,1fr);
-            gap: 10px;
-            margin-top: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
+        .giphy-results { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 12px; max-height: 200px; overflow-y: auto; }
         .giphy-sticker { width: 100%; border-radius: 20px; cursor: pointer; }
-        input {
-            width: 100%;
-            padding: 14px;
-            border-radius: 60px;
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-        /* Fondo blanco para los inputs de búsqueda y enlace */
-        #youtubeSearchInput, #youtubeUrlInput {
-            background: white !important;
-            color: black !important;
-            border: 1px solid #ccc;
-        }
+        input { width: 100%; padding: 14px; border-radius: 60px; margin-bottom: 12px; font-size: 1rem; background: white !important; color: black !important; border: 1px solid #ccc; }
         input:focus { outline: none; border-color: #5271FF; }
         .footer { margin-top: 30px; text-align: center; font-size: 0.7rem; color: #5a5a70; }
-        #micFullscreen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, #0a0a1a, #000);
-            z-index: 3000;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
+        #micFullscreen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #0a0a1a, #000); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .on-air { font-size: 2rem; color: #ff5e6b; margin-bottom: 30px; animation: pulse 1.5s infinite; }
         .mic-icon { font-size: 100px; margin: 30px; }
         @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; text-shadow: 0 0 8px #ff5e6b; } }
-
-        /* --- Reacciones rápidas (grid de emojis) --- */
-        .effects-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin: 8px 0 4px;
-        }
-        .effect-btn {
-            background: #1F1F2C;
-            border: none;
-            font-size: 28px;
-            padding: 12px 0;
-            border-radius: 48px;
-            cursor: pointer;
-            transition: 0.1s;
-            color: white;
-        }
+        .effects-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 8px 0 4px; }
+        .effect-btn { background: #1F1F2C; border: none; font-size: 28px; padding: 12px 0; border-radius: 48px; cursor: pointer; transition: 0.1s; color: white; }
         .effect-btn:active { transform: scale(0.92); background: #2d2d40; }
-
-        /* Estilos para resultados de búsqueda */
-        #searchResultsList {
-            display: none;
-            background: #1e1e2e;
-            border-radius: 16px;
-            padding: 8px;
-            margin-top: 8px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .search-result {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #333;
-            color: white;
-            font-size: 0.9rem;
-        }
-        .search-result:hover {
-            background: #2a2a3a;
-        }
-        .search-container {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        .search-container input {
-            flex: 1;
-            margin-bottom: 0;
-        }
-        .search-container button {
-            width: auto;
-            padding: 0 20px;
-            margin-bottom: 0;
-        }
     </style>
 </head>
 <body>
@@ -202,14 +55,12 @@
 
 <div id="mainSection" style="display:none;">
     <div class="logo">🔥🎤 FireVoice <span id="userTeamBadge" style="font-size:0.8rem; background:#333; padding:4px 12px; border-radius:40px;"></span></div>
-
     <div class="scoreboard" id="scoreboard">
         <div class="team-score red-score"><div>🔴 ROJO</div><div class="points" id="redPoints">0</div></div>
         <div class="vs-divider">VS</div>
         <div class="team-score blue-score"><div>🔵 AZUL</div><div class="points" id="bluePoints">0</div></div>
     </div>
 
-    <!-- Panel del cantante (cuando es su turno) -->
     <div class="collapsible-section" id="singerPanel" style="border:1px solid #2BAE6A; display:none;">
         <div class="section-header">🎤 TU MOMENTO <span class="chevron">▼</span></div>
         <div class="section-content">
@@ -220,7 +71,6 @@
         </div>
     </div>
 
-    <!-- Interacción en vivo -->
     <div class="collapsible-section">
         <div class="section-header">🔥 INTERACCIÓN EN VIVO <span class="chevron">▼</span></div>
         <div class="section-content">
@@ -233,21 +83,14 @@
         </div>
     </div>
 
-    <!-- Añadir canción con buscador dinámico -->
     <div class="collapsible-section">
         <div class="section-header">🎵 AÑADIR CANCIÓN <span class="chevron">▼</span></div>
         <div class="section-content">
-            <div class="search-container">
-                <input type="text" id="youtubeSearchInput" placeholder="Buscar canción en YouTube...">
-                <button class="btn-full btn-primary" id="searchYoutubeBtn">🔍 Buscar</button>
-            </div>
-            <div id="searchResultsList"></div>
-            <input type="text" id="youtubeUrlInput" placeholder="O pega el enlace de YouTube aquí...">
+            <input type="text" id="youtubeUrlInput" placeholder="Pega enlace de YouTube...">
             <button class="btn-full btn-primary" id="addSongBtn">➕ Añadir a la cola</button>
         </div>
     </div>
 
-    <!-- Reacciones Rápidas (reemplaza a efectos de voz) -->
     <div class="collapsible-section">
         <div class="section-header">✨ REACCIONES RÁPIDAS <span class="chevron">▼</span></div>
         <div class="section-content">
@@ -269,7 +112,6 @@
         </div>
     </div>
 
-    <!-- Stickers GIPHY -->
     <div class="collapsible-section collapsed">
         <div class="section-header">🖼️ STICKERS ANIMADOS <span class="chevron">▼</span></div>
         <div class="section-content">
@@ -281,7 +123,6 @@
         </div>
     </div>
 
-    <!-- Ranking -->
     <div class="collapsible-section collapsed">
         <div class="section-header">🏆 RANKING <span class="chevron">▼</span></div>
         <div class="section-content">
@@ -320,7 +161,7 @@
     const voiceEffectText = document.getElementById('voiceEffectText');
     const currentSongTitleSpan = document.getElementById('currentSongTitleTV');
 
-    // Colapsar secciones
+    // Colapsar
     function toggleCollapse(el) { el.classList.toggle('collapsed'); }
     document.querySelectorAll('.collapsible-section .section-header').forEach(header => {
         header.onclick = (e) => toggleCollapse(header.parentElement);
@@ -387,7 +228,7 @@
         setTimeout(() => { btn.disabled = false; btn.innerText = '🪈 Llamar al Chacal'; }, 4000);
     };
 
-    // ----- NUEVAS REACCIONES RÁPIDAS -----
+    // Reacciones rápidas
     document.querySelectorAll('.effect-btn').forEach(btn => {
         btn.onclick = () => {
             const effect = btn.dataset.effect;
@@ -397,77 +238,21 @@
         };
     });
 
-    // ----- BUSCADOR DINÁMICO DE YOUTUBE -----
-    const searchInput = document.getElementById('youtubeSearchInput');
-    const searchBtn = document.getElementById('searchYoutubeBtn');
-    const resultsDiv = document.getElementById('searchResultsList');
-    const urlInput = document.getElementById('youtubeUrlInput');
-
-    async function searchYouTube() {
-        const query = searchInput.value.trim();
-        if (!query) return;
-        resultsDiv.innerHTML = '<div class="search-result">Buscando...</div>';
-        resultsDiv.style.display = 'block';
-        try {
-            const res = await fetch(`/api/search-youtube?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
-            if (data.length === 0) {
-                resultsDiv.innerHTML = '<div class="search-result">No se encontraron resultados.</div>';
-                return;
-            }
-            resultsDiv.innerHTML = '';
-            data.forEach(video => {
-                const div = document.createElement('div');
-                div.className = 'search-result';
-                div.textContent = video.title;
-                div.onclick = () => {
-                    // Añadir automáticamente a la cola
-                    socket.emit('add-song', { url: video.url, nickname: myNickname });
-                    urlInput.value = video.url; // opcional: rellenar el campo manual
-                    resultsDiv.style.display = 'none';
-                    searchInput.value = '';
-                    // Notificación visual breve
-                    const toast = document.createElement('div');
-                    toast.textContent = '✅ Canción añadida a la cola';
-                    toast.style.position = 'fixed';
-                    toast.style.bottom = '20px';
-                    toast.style.left = '20px';
-                    toast.style.background = '#2BAE6A';
-                    toast.style.padding = '10px 20px';
-                    toast.style.borderRadius = '60px';
-                    toast.style.zIndex = '9999';
-                    document.body.appendChild(toast);
-                    setTimeout(() => toast.remove(), 2000);
-                };
-                resultsDiv.appendChild(div);
-            });
-        } catch (err) {
-            console.error(err);
-            resultsDiv.innerHTML = '<div class="search-result">Error al buscar. Inténtalo de nuevo.</div>';
-        }
-    }
-
-    searchBtn.onclick = searchYouTube;
-    // Ocultar resultados al hacer clic fuera
-    document.addEventListener('click', (e) => {
-        if (!resultsDiv.contains(e.target) && e.target !== searchInput && e.target !== searchBtn) {
-            resultsDiv.style.display = 'none';
-        }
-    });
-
-    // Añadir canción manualmente
+    // Añadir canción manual
     document.getElementById('addSongBtn').onclick = () => {
-        const url = urlInput.value.trim();
+        const url = document.getElementById('youtubeUrlInput').value.trim();
         if (url) {
             socket.emit('add-song', { url: url, nickname: myNickname });
-            urlInput.value = '';
+            document.getElementById('youtubeUrlInput').value = '';
         } else {
-            alert("Ingresa un enlace de YouTube o busca una canción primero.");
+            alert("Ingresa un enlace de YouTube");
         }
     };
 
-    // Resto de funcionalidades (micrófono, invitaciones, ranking, etc.)
+    // Ranking
+    document.getElementById('rankingBtn').onclick = () => socket.emit('request-final-ranking');
+
+    // Micrófono
     document.getElementById('micBtn').onclick = async () => {
         if (!navigator.mediaDevices || !window.isSecureContext) return alert("HTTPS necesario");
         try {
@@ -489,6 +274,8 @@
         document.getElementById('micFullscreen').style.display = 'none';
         mainDiv.style.display = 'block';
     };
+
+    // Invitaciones
     document.getElementById('inviteBtn').onclick = () => socket.emit('get-participants');
     socket.on('participants-list', (list) => {
         let html = '<div style="position:fixed;top:20%;left:10%;width:80%;background:#222;border-radius:28px;padding:20px;z-index:2000;"><h3>Invitar a dúo</h3><ul>';
@@ -501,12 +288,7 @@
     });
     socket.on('invitation-accepted', () => alert("¡Dúo activado!"));
 
-    // Ranking
-    document.getElementById('rankingBtn').onclick = () => {
-        socket.emit('request-final-ranking');
-    };
-
-    // Estado y actualizaciones
+    // Estado
     socket.on('state-update', (data) => {
         if (data.currentSong && data.currentSong.requester === myNickname) {
             singerPanel.style.display = 'block';
@@ -528,7 +310,6 @@
         redPointsSpan.innerText = scores.red;
         bluePointsSpan.innerText = scores.blue;
     });
-    // Efectos de voz ya no se usan, pero mantenemos la recepción por si acaso
     socket.on('voice-effect-changed', ({ effect }) => {
         if (effect === 'normal') voiceAlert.style.display = 'none';
         else { voiceEffectText.innerText = effect; voiceAlert.style.display = 'block'; }
@@ -538,7 +319,7 @@
         scoreboardDiv.style.display = mode === 'teams' ? 'flex' : 'none';
     });
 
-    // Giphy stickers
+    // Giphy
     async function searchGiphy(q) {
         const query = q || document.getElementById('giphySearch').value || 'party';
         const container = document.getElementById('giphyResults');
