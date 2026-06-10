@@ -147,6 +147,7 @@
     let clickBuffer = { claps: 0, screams: 0 };
     let isMicActive = false, mediaRecorder, micStream;
     let currentGameMode = 'teams';
+    let activeSongId = null;  // Para detectar cambio de canción
 
     // Elementos
     const loginDiv = document.getElementById('loginSection');
@@ -288,16 +289,23 @@
     });
     socket.on('invitation-accepted', () => alert("¡Dúo activado!"));
 
-    // Estado
+    // Estado (corregido: sin sincronización de totalClicks con currentSongClaps)
     socket.on('state-update', (data) => {
         if (data.currentSong && data.currentSong.requester === myNickname) {
             singerPanel.style.display = 'block';
             currentSongTitleSpan.innerText = data.currentSong.title;
         } else singerPanel.style.display = 'none';
-        if (data.currentSongClaps !== undefined) {
-            totalClicks = 100 - data.currentSongClaps;
-            updateClickerUI();
+
+        // Detectar cambio de canción para reiniciar contador de clics local
+        if (data.currentSong) {
+            const newSongId = data.currentSong.id;
+            if (newSongId !== activeSongId) {
+                activeSongId = newSongId;
+                totalClicks = 0;
+                updateClickerUI();
+            }
         }
+
         if (data.gameMode) currentGameMode = data.gameMode;
         if (data.teamScores) {
             redPointsSpan.innerText = data.teamScores.red;
@@ -306,6 +314,7 @@
         if (currentGameMode === 'arcade') scoreboardDiv.style.display = 'none';
         else scoreboardDiv.style.display = 'flex';
     });
+
     socket.on('team-scores', (scores) => {
         redPointsSpan.innerText = scores.red;
         bluePointsSpan.innerText = scores.blue;
