@@ -339,3 +339,113 @@ button:active { transform: scale(0.97); }
     background: #2C2C3E !important;
     color: white !important;
 }
+/* ===== BARRA VERTICAL ESTILO GUITAR HERO (FLOTANTE SOBRE EL VIDEO) ===== */
+.player-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    aspect-ratio: 16 / 9;
+    border-radius: 24px;
+    overflow: visible !important;  /* Para que la barra no se recorte */
+    background: #000;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Contenedor de la barra (flota sobre el iframe) */
+.slim-vertical-wrapper {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 70%;
+    z-index: 30;
+    pointer-events: none;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.3); /* solo para depuración, luego lo quitas */
+}
+
+/* La barra en sí */
+.vertical-meter-slim {
+    width: 100%;
+    height: 100%;
+    background: rgba(30, 30, 40, 0.9);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Capa de color que sube */
+.rgb-layer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(0deg, 
+        #ff0040, #ff8000, #ffff00, #00ffcc, #3a86ff, #d600ff);
+    background-size: 100% 300%;
+    transition: height 0.08s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    border-radius: 20px;
+    box-shadow: 0 0 8px rgba(255, 80, 0, 0.6);
+}
+
+/* Efecto high-energy (>50%) */
+.rgb-layer.high-energy {
+    animation: rgbFlow 0.15s infinite alternate, intenseVibe 0.2s infinite alternate;
+    background: linear-gradient(0deg, 
+        #ff00aa, #ffaa00, #00ff55, #00ffff, #ff44ff);
+    background-size: 100% 400%;
+    box-shadow: 0 0 20px #ff44aa, inset 0 0 6px #ffffaa;
+    filter: brightness(1.3) contrast(1.2);
+}
+
+@keyframes rgbFlow {
+    0% { filter: brightness(1) hue-rotate(0deg); background-position: 0% 0%; }
+    100% { filter: brightness(1.5) hue-rotate(12deg); background-position: 0% 40%; }
+}
+
+@keyframes intenseVibe {
+    0% { box-shadow: 0 0 12px #ff66cc, inset 0 0 4px #ffdd88; }
+    100% { box-shadow: 0 0 28px #ff99ff, inset 0 0 12px #ffffaa; }
+}
+
+/* Bloque de estadísticas (porcentaje, emoji, mensaje) */
+.stats-slim {
+    position: absolute;
+    bottom: 20px;
+    left: 50px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    border-radius: 40px;
+    padding: 8px 16px;
+    text-align: left;
+    font-family: monospace;
+    z-index: 30;
+    pointer-events: none;
+    border-left: 4px solid #ffaa33;
+}
+
+.percentage-slim {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #ffd966;
+    line-height: 1;
+}
+
+.emoji-strip {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+}
+
+.reaction-message-slim {
+    font-size: 0.7rem;
+    color: #ffccaa;
+}
+
+/* Ajuste para evitar que el iframe tape la barra (asegurar z-index) */
+#youtubePlayer {
+    position: relative;
+    z-index: 1;
+}
