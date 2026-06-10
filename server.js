@@ -28,7 +28,6 @@ app.get('/api/giphy', async (req, res) => {
     }
 });
 
-// Endpoint ElevenLabs (voz premium)
 app.post('/api/hablar', async (req, res) => {
     const texto = req.body.texto;
     const apiKey = process.env.ELEVEN_API_KEY;
@@ -50,7 +49,6 @@ app.post('/api/hablar', async (req, res) => {
     }
 });
 
-// ========= ESTADO GLOBAL =========
 let queue = [];
 let history = [];
 let currentSong = null;
@@ -65,7 +63,6 @@ let activeVoiceEffect = 'normal';
 let voiceEffectTimeout = null;
 let gameMode = 'teams';
 
-// Decaimiento estilo Guitar Hero
 let decayTimeout = null;
 let decayInterval = null;
 
@@ -177,7 +174,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('trigger-voice-effect', (effectName) => {
-        // Mantenido por compatibilidad, pero ya no se usa en el mando
         if (['normal', 'reverb', 'helium', 'monster'].includes(effectName)) {
             activeVoiceEffect = effectName;
             const sender = participants.get(socket.id) || 'Alguien';
