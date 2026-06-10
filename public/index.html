@@ -10,7 +10,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     <style>
-        /* ---------- RESET Y BASE (TODO EL SISTEMA ORIGINAL SE MANTIENE) ---------- */
+        /* ---------- RESET Y BASE ---------- */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             margin: 0;
@@ -26,7 +26,6 @@
             padding: 20px;
             transition: all 0.3s;
         }
-
         /* ---------- OVERLAY DE INICIO PREMIUM ---------- */
         #startOverlay {
             position: fixed;
@@ -346,7 +345,7 @@
             100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
 
-        /* Botón flotante para cambiar modo (estilo consistente) */
+        /* Botón flotante para cambiar modo (se muestra/oculta dinámicamente) */
         .mode-toggle-btn {
             position: fixed;
             bottom: 20px;
@@ -363,34 +362,43 @@
             font-size: 0.9rem;
             box-shadow: 0 0 10px rgba(255,0,170,0.3);
             transition: all 0.2s;
+            display: none; /* oculto por defecto, se muestra con JS */
         }
         .mode-toggle-btn:hover {
             background: #ff00aa;
             transform: scale(1.02);
         }
 
-        /* ---------- NUEVA BARRA VERTICAL ESTILO GUITAR HERO ---------- */
+        /* ===== BARRA VERTICAL ESTILO GUITAR HERO ===== */
         .player-wrapper {
             position: relative;
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 16 / 9;
+            border-radius: 24px;
+            overflow: visible !important;
+            background: #000;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
         .slim-vertical-wrapper {
             position: absolute;
-            left: 6px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            z-index: 20;
-            display: flex;
-            justify-content: center;
+            width: 14px;
+            height: 70%;
+            z-index: 30;
             pointer-events: none;
+            border-radius: 20px;
         }
         .vertical-meter-slim {
-            width: 10px;
-            height: 70%;
-            background: rgba(255,255,255,0.3);
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 30, 40, 0.9);
             border-radius: 20px;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 0 0 1px rgba(255,255,255,0.2);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
         }
         .rgb-layer {
             position: absolute;
@@ -398,54 +406,53 @@
             left: 0;
             width: 100%;
             height: 0%;
-            background: linear-gradient(0deg, 
-                #ff0040, #ff8000, #ffff00, #00ffcc, #3a86ff, #d600ff);
+            background: linear-gradient(0deg, #ff0040, #ff8000, #ffff00, #00ffcc, #3a86ff, #d600ff);
             background-size: 100% 300%;
-            border-radius: 20px;
             transition: height 0.08s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            box-shadow: 0 0 6px rgba(255, 100, 0, 0.5);
+            border-radius: 20px;
+            box-shadow: 0 0 8px rgba(255, 80, 0, 0.6);
         }
         .rgb-layer.high-energy {
-            animation: rgbFlow 0.18s infinite alternate, intenseVibe 0.2s infinite alternate;
-            background: linear-gradient(0deg, 
-                #ff0080, #ffaa00, #c0ff00, #00ffff, #ff44cc);
+            animation: rgbFlow 0.15s infinite alternate, intenseVibe 0.2s infinite alternate;
+            background: linear-gradient(0deg, #ff00aa, #ffaa00, #00ff55, #00ffff, #ff44ff);
             background-size: 100% 400%;
-            box-shadow: 0 0 12px #ff44aa;
+            box-shadow: 0 0 20px #ff44aa, inset 0 0 6px #ffffaa;
+            filter: brightness(1.3) contrast(1.2);
         }
         @keyframes rgbFlow {
             0% { filter: brightness(1) hue-rotate(0deg); background-position: 0% 0%; }
-            100% { filter: brightness(1.3) hue-rotate(8deg); background-position: 0% 30%; }
+            100% { filter: brightness(1.5) hue-rotate(12deg); background-position: 0% 40%; }
         }
         @keyframes intenseVibe {
-            0% { box-shadow: 0 0 8px #ff66cc; }
-            100% { box-shadow: 0 0 20px #ff99ff; }
+            0% { box-shadow: 0 0 12px #ff66cc, inset 0 0 4px #ffdd88; }
+            100% { box-shadow: 0 0 28px #ff99ff, inset 0 0 12px #ffffaa; }
         }
         .stats-slim {
             position: absolute;
-            bottom: 12px;
-            left: 12px;
-            background: rgba(0,0,0,0.6);
+            bottom: 20px;
+            left: 50px;
+            background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(8px);
-            border-radius: 60px;
-            padding: 6px 14px;
+            border-radius: 40px;
+            padding: 8px 16px;
             text-align: left;
             font-family: monospace;
-            z-index: 20;
+            z-index: 30;
             pointer-events: none;
+            border-left: 4px solid #ffaa33;
         }
-        .percentage-slim {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: #ffd966;
-            line-height: 1;
+        .percentage-slim { font-size: 1.2rem; font-weight: 800; color: #ffd966; line-height: 1; }
+        .emoji-strip { font-size: 1.2rem; letter-spacing: 2px; }
+        .reaction-message-slim { font-size: 0.7rem; color: #ffccaa; }
+
+        /* Animación de pulso para la tarjeta de próximo cantante */
+        .pulse-animation {
+            animation: cardPulse 0.8s ease-in-out 3;
         }
-        .emoji-strip {
-            font-size: 1.2rem;
-            letter-spacing: 2px;
-        }
-        .reaction-message-slim {
-            font-size: 0.7rem;
-            color: #ffccaa;
+        @keyframes cardPulse {
+            0% { transform: scale(1); opacity: 0.9; border-left-color: #ffcc33; }
+            50% { transform: scale(1.05); opacity: 1; border-left-color: #ffaa00; box-shadow: 0 0 15px rgba(255,204,51,0.8); }
+            100% { transform: scale(1); opacity: 0.9; border-left-color: #ffcc33; }
         }
     </style>
 </head>
@@ -500,12 +507,12 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL: DOS COLUMNAS (con ID para manipular en modo cine) -->
+    <!-- CONTENEDOR PRINCIPAL: DOS COLUMNAS -->
     <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
         <!-- COLUMNA IZQUIERDA: REPRODUCTOR + CONTROLES -->
         <div>
             <div class="player-wrapper">
-                <!-- NUEVA BARRA VERTICAL (reemplaza al antiguo applauseMeterContainer) -->
+                <!-- BARRA VERTICAL -->
                 <div class="slim-vertical-wrapper">
                     <div class="vertical-meter-slim" id="slimMeter">
                         <div class="rgb-layer" id="rgbLayer"></div>
@@ -528,7 +535,7 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA: AHORA SUENA + COLA (con ID para ocultar en modo cine) -->
+        <!-- COLUMNA DERECHA: AHORA SUENA + COLA -->
         <div id="rightColumn" style="display: flex; flex-direction: column; gap: 20px;">
             <div class="now-playing-card" style="background: rgba(255,255,255,0.05); border-radius: 28px; padding: 15px;">
                 <h3>🎵 Ahora suena:</h3>
@@ -599,7 +606,7 @@
     let currentVideoId = null;
     let songCounter = 0;
     let currentGameMode = 'teams';
-    let currentQueue = [];  // <- NUEVO: almacena la cola actual para usarla en modo cine
+    let currentQueue = [];
 
     if (typeof confetti === 'undefined') window.confetti = () => console.log("mock confetti");
 
@@ -658,7 +665,7 @@
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('youtubePlayer', {
             videoId: '',
-            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0, 'origin': 'https://firevoice.up.railway.app' },
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0, 'origin': window.location.origin },
             events: {
                 'onReady': (e) => { 
                     e.target.unMute(); 
@@ -687,7 +694,7 @@
         if(d.qrImage) document.getElementById('qrImage').src = d.qrImage;
     }).catch(() => console.log("QR no disponible"));
 
-    // ---------- FUNCIÓN PARA ACTUALIZAR CARTEL EN MODO CINE (nueva) ----------
+    // ---------- FUNCIÓN PARA ACTUALIZAR CARTEL EN MODO CINE ----------
     function updateCinemaNextSong() {
         const card = document.getElementById('cinemaNextSongCard');
         if (!card) return;
@@ -705,11 +712,10 @@
 
     // ---------- SOCKET: ESTADO, COLA, CANCIONES ----------
     socket.on('state-update', (state) => {
-        // Guardar cola actual
         currentQueue = state.queue || [];
         updateQueue(state.queue);
         updateNowPlaying(state.currentSong);
-        updateCinemaNextSong(); // actualizar cartel si está visible
+        updateCinemaNextSong();
         
         if (state.teamScores) {
             document.getElementById('scoreRed').innerText = state.teamScores.red || 0;
@@ -718,7 +724,6 @@
         if (state.currentSongClaps !== undefined) updateApplauseMeter(state.currentSongClaps);
         if (state.activeVoiceEffect !== undefined) currentVoiceEffectName = state.activeVoiceEffect;
         
-        // Modo de juego
         if (state.gameMode !== undefined) {
             currentGameMode = state.gameMode;
             const btn = document.getElementById('modeToggleBtn');
@@ -927,7 +932,6 @@
                 <button class="magic-btn" style="background:#ff4757; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>
             </div>
         `).join('');
-        // Actualizar cartel de modo cine si está visible
         updateCinemaNextSong();
     }
 
@@ -977,19 +981,21 @@
         slimWrapper.style.left = '20px';
         slimWrapper.style.top = '50%';
         slimWrapper.style.transform = 'translateY(-50%)';
+        slimWrapper.style.height = '90%';   // Ajuste en modo cine: más alta
         statsSlim.style.position = 'absolute';
         statsSlim.style.bottom = '20px';
         statsSlim.style.left = '20px';
         statsSlim.style.transform = 'none';
+        // Ajustar la barra interna para que herede altura
+        const meter = slimWrapper.querySelector('.vertical-meter-slim');
+        if (meter) meter.style.height = '100%';
 
-        // Ocultar columna derecha y mostrar cartel
+        // Ocultar columna derecha
         const rightCol = document.getElementById('rightColumn');
         if (rightCol) rightCol.style.display = 'none';
+        // No mostramos el cartel aquí, se mostrará automáticamente al final de la canción
         const nextCard = document.getElementById('cinemaNextSongCard');
-        if (nextCard) {
-            nextCard.style.display = 'block';
-            updateCinemaNextSong(); // asegurar que tenga la info actual
-        }
+        if (nextCard) nextCard.style.display = 'none'; // aseguramos oculto
     }
 
     function restoreFromCinemaMode() {
@@ -1002,16 +1008,18 @@
         slimWrapper.style.left = '';
         slimWrapper.style.top = '';
         slimWrapper.style.transform = '';
+        slimWrapper.style.height = '';
         statsSlim.style.position = '';
         statsSlim.style.bottom = '';
         statsSlim.style.left = '';
         statsSlim.style.transform = '';
+        const meter = slimWrapper.querySelector('.vertical-meter-slim');
+        if (meter) meter.style.height = '';
 
         if (originalBarContainer) originalBarContainer.appendChild(slimWrapper);
         if (originalStatsContainer) originalStatsContainer.appendChild(statsSlim);
         cinemaOverlay.remove();
 
-        // Mostrar columna derecha y ocultar cartel
         const rightCol = document.getElementById('rightColumn');
         if (rightCol) rightCol.style.display = '';
         const nextCard = document.getElementById('cinemaNextSongCard');
@@ -1042,11 +1050,28 @@
         audio.play().catch(e => console.log("Error audio efecto:", e));
     }
 
+    // Función para mostrar el cartel de próximo cantante con pulso (solo en modo cine)
+    function showCinemaNextCardWithPulse() {
+        if (!document.body.classList.contains('cinema-mode')) return;
+        if (!currentQueue || currentQueue.length === 0) return;
+        const card = document.getElementById('cinemaNextSongCard');
+        if (!card) return;
+        card.style.display = 'block';
+        card.classList.add('pulse-animation');
+        setTimeout(() => {
+            card.style.display = 'none';
+            card.classList.remove('pulse-animation');
+        }, 5000);
+    }
+
+    // Interval principal que verifica el tiempo del reproductor y controla visibilidad del botón y cartel
     setInterval(() => {
         if (typeof ytPlayer !== 'undefined' && ytPlayer && ytPlayer.getPlayerState) {
             const state = ytPlayer.getPlayerState();
             const currentTime = ytPlayer.getCurrentTime();
             const duration = ytPlayer.getDuration();
+            
+            // Sonidos existentes (ovación, aplausos, multitud)
             if (state === 1 && currentTime > 0 && currentTime < 2 && !window.hasStarted) {
                 reproducirEfecto('ovacion.mp3');
                 window.hasStarted = true;
@@ -1057,6 +1082,21 @@
             }
             if (state === 1 && currentTime > 10 && duration && (duration - currentTime) > 5) {
                 if (Math.random() < 0.003) reproducirEfecto('multitud.wav');
+            }
+            
+            // Control de visibilidad del botón de modo (primeros 10s o últimos 5s)
+            const modeBtn = document.getElementById('modeToggleBtn');
+            if (modeBtn) {
+                if (state === 1 && (currentTime <= 10 || (duration && (duration - currentTime) <= 5))) {
+                    modeBtn.style.display = 'block';
+                } else {
+                    modeBtn.style.display = 'none';
+                }
+            }
+            
+            // Mostrar cartel de próximo cantante en los últimos 5 segundos (solo en modo cine)
+            if (state === 1 && duration && (duration - currentTime) <= 5 && (duration - currentTime) > 0) {
+                showCinemaNextCardWithPulse();
             }
         }
     }, 1000);
@@ -1070,7 +1110,7 @@
         if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 10000 });
     });
 
-    // Pipeline de Web Audio API para Modulación de Voz
+    // Pipeline de Web Audio API para Modulación de Voz (se mantiene igual)
     let audioCtx = null;
     let mainGainNode = null;
     let delayNode = null;
@@ -1140,7 +1180,7 @@
         if (effect !== 'normal') playBellSound();
     });
 
-    // ---------- NUEVA FUNCIÓN UPDATEAPPLAUSEMETER (para barra vertical) ----------
+    // ---------- UPDATEAPPLAUSEMETER (barra vertical) ----------
     function updateApplauseMeter(val) {
         let percent = Math.min(100, Math.max(0, val || 0));
         const rgbLayer = document.getElementById('rgbLayer');
@@ -1151,14 +1191,12 @@
         if (rgbLayer) rgbLayer.style.height = percent + '%';
         if (percentDisplay) percentDisplay.innerText = Math.floor(percent) + '%';
         
-        // Efecto high-energy (>50%)
         if (percent >= 50) {
             rgbLayer.classList.add('high-energy');
         } else {
             rgbLayer.classList.remove('high-energy');
         }
         
-        // Emojis y mensajes según nivel
         let emoji = "", msg = "";
         if (percent < 15) { emoji = "😶🔇"; msg = "¡Silencio total! Anima al cantante 🙌"; }
         else if (percent < 35) { emoji = "👏🎤✨"; msg = "Pequeños aplausos... ¡más energía!"; }
