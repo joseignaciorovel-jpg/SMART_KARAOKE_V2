@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const path = require('path');
 const QRCode = require('qrcode');
 const axios = require('axios');
+const ytSearch = require('yt-search');   // <-- NUEVO: para buscar canciones
 
 const app = express();
 const server = http.createServer(app);
@@ -26,6 +27,25 @@ app.get('/api/giphy', async (req, res) => {
     } catch (error) {
         console.error("Error Giphy:", error.message);
         res.status(500).json({ error: 'Error al conectar con Giphy' });
+    }
+});
+
+// ========= NUEVO ENDPOINT: BÚSQUEDA EN YOUTUBE (para el mando) =========
+app.get('/api/search-youtube', async (req, res) => {
+    const query = req.query.q;
+    if (!query) return res.status(400).json({ error: 'Se requiere término de búsqueda' });
+    try {
+        const result = await ytSearch(query);
+        // Devolver los primeros 8 videos con título y URL
+        const videos = result.videos.slice(0, 8).map(video => ({
+            title: video.title,
+            url: video.url,
+            videoId: video.videoId
+        }));
+        res.json(videos);
+    } catch (error) {
+        console.error("Error en búsqueda YouTube:", error.message);
+        res.status(500).json({ error: 'Error al buscar en YouTube' });
     }
 });
 
@@ -65,12 +85,12 @@ let currentSongVotesChacal = new Set();
 let activeVoiceEffect = 'normal';
 let voiceEffectTimeout = null;
 
-// NUEVO: Modo de juego (arcade o teams)
-let gameMode = 'teams';  // 'teams' por defecto
+// Modo de juego (arcade o teams)
+let gameMode = 'teams';
 
-// ----- NUEVO SISTEMA DE DECAIMIENTO (estilo Guitar Hero) -----
-let decayTimeout = null;   // temporizador de espera antes de empezar a bajar
-let decayInterval = null;  // intervalo que va bajando gradualmente
+// Sistema de decaimiento (estilo Guitar Hero)
+let decayTimeout = null;
+let decayInterval = null;
 
 function stopDecay() {
     if (decayInterval) {
@@ -84,11 +104,9 @@ function stopDecay() {
 }
 
 function startDecay() {
-    stopDecay(); // limpia cualquier decaimiento previo
-    if (!currentSong) return; // solo si hay canción activa
-    // Esperar 2.8 segundos de inactividad antes de empezar a bajar
+    stopDecay();
+    if (!currentSong) return;
     decayTimeout = setTimeout(() => {
-        // Iniciar el descenso gradual (cada 170ms baja 1.2%)
         decayInterval = setInterval(() => {
             if (currentSongClaps <= 0) {
                 stopDecay();
@@ -97,8 +115,8 @@ function startDecay() {
             let decrement = Math.min(currentSongClaps, 1.2);
             currentSongClaps = Math.max(0, currentSongClaps - decrement);
             io.emit('applause-update', { currentSongClaps, peakApplause, teamScores });
-        }, 170); // 170ms entre cada bajada
-    }, 2800); // 2.8 segundos de gracia
+        }, 170);
+    }, 2800);
 }
 
 function resetDecay() {
@@ -139,7 +157,7 @@ function nextSong() {
     peakApplause = 0;
     activeVoiceEffect = 'normal';
     clearTimeout(voiceEffectTimeout);
-    resetDecay();          // Iniciar el ciclo de decaimiento para la nueva canción
+    resetDecay();
     emitFullState();
 }
 
@@ -182,18 +200,15 @@ io.on('connection', (socket) => {
         const total = (claps || 0) + (screams || 0);
         if (total <= 0) return;
 
-        // Actualizar aplausómetro
         currentSongClaps = Math.min(100, currentSongClaps + total);
         if (currentSongClaps > peakApplause) peakApplause = currentSongClaps;
 
-        // Ranking individual: sumar al cantante actual
         if (currentSong) {
             const singer = currentSong.requester;
             singerScores[singer] = (singerScores[singer] || 0) + total;
             io.emit('individual-ranking', getIndividualRanking());
         }
 
-        // Modo equipos: sumar puntos al equipo del usuario que reacciona
         if (gameMode === 'teams') {
             const userTeam = participantTeams.get(socket.id);
             if (userTeam) {
@@ -202,10 +217,7 @@ io.on('connection', (socket) => {
             }
         }
 
-        // Emitir actualización visual del aplausómetro
         io.emit('applause-update', { currentSongClaps, peakApplause, teamScores });
-
-        // Reiniciar el temporizador de decaimiento (inactividad)
         resetDecay();
     });
 
@@ -292,7 +304,7 @@ io.on('connection', (socket) => {
             if (currentSong) queue.unshift(currentSong);
             currentSong = history.pop();
             emitFullState();
-            resetDecay();  // Reiniciar decaimiento al cambiar manualmente
+            resetDecay();
         }
     });
     socket.on('remove-song', (songId) => {
@@ -309,7 +321,7 @@ io.on('connection', (socket) => {
         peakApplause = 0;
         activeVoiceEffect = 'normal';
         clearTimeout(voiceEffectTimeout);
-        stopDecay();            // Detener cualquier decaimiento activo
+        stopDecay();
         emitFullState();
         io.emit('team-scores', teamScores);
         io.emit('individual-ranking', []);
