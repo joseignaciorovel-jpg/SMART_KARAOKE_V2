@@ -67,3 +67,16 @@ test('YouTube URL parsing handles mobile shares, parameter order and rejects loo
         assert.equal((await ack(singer, 'add-song', { url })).ok, false);
     }
 });
+
+test('metadata outages do not prevent valid video links from entering the queue', async () => {
+    const singer = await connect(); await join(singer);
+    const previous = axios.get;
+    try {
+        axios.get = async () => { throw new Error('YouTube unavailable'); };
+        const result = await ack(singer, 'add-song', { url: 'https://youtu.be/abcdefghijk' });
+        assert.equal(result.ok, true);
+        assert.match(result.message, /título provisional/);
+        const snapshot = await state(singer);
+        assert.ok([snapshot.currentSong, ...snapshot.queue].some(song => song.title === 'Video de YouTube (abcdefghijk)'));
+    } finally { axios.get = previous; }
+});

@@ -157,14 +157,18 @@ async function addSong(videoUrl, requester, requesterId) {
         }
     } catch (_) { return null; }
     if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || '')) return null;
+    let title = `Video de YouTube (${videoId})`, metadataAvailable = false;
     try {
-        const meta = (await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}&format=json`, { timeout: 8000 })).data;
-        const newSong = { id: crypto.randomUUID(), requesterId, videoId, title: meta.title, thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, requester };
-        queue.push(newSong);
-        if (!currentSong) nextSong();
-        else emitFullState();
-        return newSong;
-    } catch(e) { return null; }
+        const meta = (await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}&format=json`, { timeout: 5000 })).data;
+        if (typeof meta.title === 'string' && meta.title.trim()) { title = meta.title; metadataAvailable = true; }
+    } catch (_) {
+        console.warn('YouTube: título no disponible; se añade el enlace con título provisional.');
+    }
+    const newSong = { id: crypto.randomUUID(), requesterId, videoId, title, metadataAvailable, thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, requester };
+    queue.push(newSong);
+    if (!currentSong) nextSong();
+    else emitFullState();
+    return newSong;
 }
 
 io.on('connection', (socket) => {
@@ -260,7 +264,7 @@ io.on('connection', (socket) => {
         }
         const nickname = participants.get(socket.id) || 'Anfitrión';
         const song = await addSong(url, nickname, socket.data.participantId || 'host');
-        if (typeof ack === 'function') ack({ ok: Boolean(song), message: song ? 'Canción añadida.' : 'No se pudo añadir el enlace. Comprueba que el video esté disponible.' });
+        if (typeof ack === 'function') ack({ ok: Boolean(song), message: song ? (song.metadataAvailable ? 'Canción añadida.' : 'Enlace añadido con título provisional. Comprueba la reproducción en la pantalla del show.') : 'Enlace no válido. Copia el enlace de un video de YouTube.' });
         if (song) io.emit('notification', `${nickname} añadió: ${song.title}`);
         else socket.emit('error-msg', 'Enlace no válido');
     });
