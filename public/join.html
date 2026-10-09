@@ -2,338 +2,81 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>FireVoice - Mando Karaoke</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: #0B0B12; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif; color: #F0F0F4; padding: 20px 16px 80px; }
-        .logo { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #FFB347, #FF6B6B); background-clip: text; -webkit-background-clip: text; color: transparent; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; }
-        .scoreboard { background: rgba(0,0,0,0.4); border-radius: 60px; padding: 12px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.1); }
-        .team-score { text-align: center; flex: 1; }
-        .team-score .points { font-size: 1.8rem; font-weight: 800; }
-        .red-score .points { color: #ff5773; }
-        .blue-score .points { color: #3b82f6; }
-        .vs-divider { padding: 0 8px; color: #aaa; }
-        .collapsible-section { border-radius: 28px; background: rgba(12,12,20,0.6); margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; }
-        .section-header { display: flex; justify-content: space-between; padding: 18px 20px; background: rgba(25,25,38,0.7); cursor: pointer; font-weight: 600; color: white; }
-        .section-content { padding: 0 20px 20px 20px; }
-        .collapsible-section.collapsed .section-content { display: none; }
-        .collapsible-section.collapsed .chevron { transform: rotate(-90deg); }
-        .chevron { transition: 0.25s; }
-        .btn-full { width: 100%; padding: 14px; border-radius: 60px; font-weight: 600; border: none; color: white; margin-bottom: 12px; cursor: pointer; background: #2C2C3E; }
-        .btn-primary { background: #5271FF; }
-        .btn-success { background: #2BAE6A; }
-        .clap-row { display: flex; gap: 12px; margin: 16px 0; }
-        .clap-btn { flex: 1; padding: 16px; border-radius: 56px; font-weight: 700; font-size: 1.2rem; border: none; background: #282839; color: white; }
-        .energy-text { font-size: 0.8rem; text-align: center; color: #aaa; margin-bottom: 8px; }
-        .giphy-results { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 12px; max-height: 200px; overflow-y: auto; }
-        .giphy-sticker { width: 100%; border-radius: 20px; cursor: pointer; }
-        input { width: 100%; padding: 14px; border-radius: 60px; margin-bottom: 12px; font-size: 1rem; background: white !important; color: black !important; border: 1px solid #ccc; }
-        input:focus { outline: none; border-color: #5271FF; }
-        .footer { margin-top: 30px; text-align: center; font-size: 0.7rem; color: #5a5a70; }
-        #micFullscreen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #0a0a1a, #000); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .on-air { font-size: 2rem; color: #ff5e6b; margin-bottom: 30px; animation: pulse 1.5s infinite; }
-        .mic-icon { font-size: 100px; margin: 30px; }
-        @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; text-shadow: 0 0 8px #ff5e6b; } }
-        .effects-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 8px 0 4px; }
-        .effect-btn { background: #1F1F2C; border: none; font-size: 28px; padding: 12px 0; border-radius: 48px; cursor: pointer; transition: 0.1s; color: white; }
-        .effect-btn:active { transform: scale(0.92); background: #2d2d40; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#11111b">
+    <title>FireVoice · Tu escenario</title>
+    <link rel="stylesheet" href="/mobile.css">
+    <script src="/socket.io/socket.io.js" defer></script>
+    <script src="/js/audio-engine.js" defer></script>
+    <script src="/js/mobile.js" defer></script>
 </head>
 <body>
-<div id="loginSection" class="collapsible-section" style="max-width: 400px; margin: 20px auto;">
-    <div class="logo">🔥🎤 FireVoice</div>
-    <input type="text" id="nicknameInput" placeholder="Tu nombre">
-    <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-        <button id="selectRedBtn" style="flex:1; background:#1f1f2c; border:2px solid #ff5773; border-radius:60px; padding:12px; color:white;">🔴 Rojo</button>
-        <button id="selectBlueBtn" style="flex:1; background:#1f1f2c; border:2px solid #3b82f6; border-radius:60px; padding:12px; color:white;">🔵 Azul</button>
-    </div>
-    <button class="btn-full btn-primary" id="enterBtn">✨ Entrar</button>
-    <div id="secureWarning" style="display:none; background:#e34d4d; border-radius:60px; padding:10px; font-size:12px; text-align:center; margin-top:12px;">⚠️ HTTPS necesario para micrófono</div>
-</div>
-
-<div id="mainSection" style="display:none;">
-    <div class="logo">🔥🎤 FireVoice <span id="userTeamBadge" style="font-size:0.8rem; background:#333; padding:4px 12px; border-radius:40px;"></span></div>
-    <div class="scoreboard" id="scoreboard">
-        <div class="team-score red-score"><div>🔴 ROJO</div><div class="points" id="redPoints">0</div></div>
-        <div class="vs-divider">VS</div>
-        <div class="team-score blue-score"><div>🔵 AZUL</div><div class="points" id="bluePoints">0</div></div>
-    </div>
-
-    <div class="collapsible-section" id="singerPanel" style="border:1px solid #2BAE6A; display:none;">
-        <div class="section-header">🎤 TU MOMENTO <span class="chevron">▼</span></div>
-        <div class="section-content">
-            <div id="voiceAlert" style="background:#9b59b6; border-radius:60px; padding:10px; margin-bottom:12px; text-align:center; display:none;">⚠️ Voz modulada: <span id="voiceEffectText"></span></div>
-            <p><strong id="currentSongTitleTV">-</strong></p>
-            <button class="btn-full btn-success" id="micBtn">🎙️ Activar micrófono</button>
-            <button class="btn-full" id="inviteBtn">👥 Invitar co-cantante</button>
+    <main class="app-shell">
+        <header class="app-header"><span class="brand">🔥 FireVoice</span><span id="connectionStatus" class="badge" role="status">Conectando…</span></header>
+        <p id="feedback" class="feedback" role="status" aria-live="polite" hidden></p>
+        <section id="loginSection" class="card welcome">
+            <p class="eyebrow">LA NOCHE ES TUYA</p><h1>Tu voz. Tu escenario.</h1>
+            <p>Únete al show, añade tu canción y canta desde el celular.</p>
+            <form id="joinForm">
+                <label for="nicknameInput">¿Cómo te presentamos?</label>
+                <input id="nicknameInput" placeholder="Tu nombre" maxlength="40" autocomplete="nickname" required>
+                <fieldset><legend>Elige tu equipo</legend><div class="team-options">
+                    <label><input type="radio" name="team" value="red" checked><span>🔴 Rojo</span></label>
+                    <label><input type="radio" name="team" value="blue"><span>🔵 Azul</span></label>
+                </div></fieldset>
+                <button id="enterBtn" class="primary full">Entrar al show</button>
+            </form>
+            <p class="note">El micrófono pide permiso solo cuando lo activas. Tu voz sale por este dispositivo; no se graba ni se envía a la pantalla.</p>
+        </section>
+        <div id="mainSection" hidden>
+            <div class="session-line"><span id="userTeamBadge"></span><button id="leaveBtn" class="text-button">Salir</button></div>
+            <nav class="tabs" aria-label="Secciones">
+                <button data-tab="sing" aria-current="page">🎤 Cantar</button>
+                <button data-tab="songs">🎵 Canciones</button>
+                <button data-tab="audience">👏 Público</button>
+            </nav>
+            <section id="sing" class="tab-panel">
+                <article class="card song-card"><p class="eyebrow" id="turnLabel">ESPERANDO EL SHOW</p><h1 id="currentSongTitle">Todavía no hay canciones</h1><p id="turnDescription">Añade una canción para entrar en la cola.</p></article>
+                <article class="card audio-card">
+                    <div class="card-heading"><h2>Tu micrófono</h2><span class="badge">Salida local</span></div>
+                    <p class="note">Empieza con poco volumen. Si aparece un pitido, pulsa Silenciar y baja el volumen. Un altavoz externo separado del micrófono puede mejorar la escucha.</p>
+                    <p id="micStatus" class="audio-status" role="status">Micrófono detenido</p>
+                    <p id="micMessage" class="note">Actívalo para comprobar tu voz antes de cantar.</p>
+                    <label for="inputLevel">Nivel de entrada</label><meter id="inputLevel" min="0" max="1" value="0">0</meter><p id="levelText" class="note">Sin captura</p>
+                    <button id="micBtn" class="primary full" type="button">Activar micrófono</button>
+                    <button id="cancelMicBtn" class="secondary full" type="button" hidden>Cancelar solicitud</button>
+                    <div id="audioControls" hidden>
+                        <div class="two-buttons"><button id="muteBtn" class="primary" type="button">Habilitar salida</button><button id="stopMicBtn" class="danger" type="button">Detener</button></div>
+                        <label for="gainControl">Ganancia de voz <output id="gainValue">15%</output></label>
+                        <input id="gainControl" type="range" min="0" max="60" value="15" step="1">
+                        <label for="voiceEffect">Efecto de voz</label><select id="voiceEffect"><option value="normal">Normal · sin eco</option><option value="reverb">Eco suave</option></select>
+                        <p class="note">La salida sigue el dispositivo elegido por tu navegador o sistema. Habilitarla no garantiza que estés escuchando.</p>
+                        <button id="heardBtn" class="secondary full" type="button" disabled>Confirmar: escucho mi voz</button>
+                        <p id="heardStatus" class="note" role="status">Escucha pendiente de comprobar.</p>
+                    </div>
+                    <button id="inviteBtn" class="secondary full" type="button" hidden>Invitar a cantar un dúo</button>
+                </article>
+                <p class="note centered">En una prueba puedes habilitar la salida aunque aún no sea tu turno. Al cambiar la canción, el micrófono se detiene.</p>
+            </section>
+            <section id="songs" class="tab-panel" hidden>
+                <article class="card"><p class="eyebrow">PREPARA TU MOMENTO</p><h2>Añade tu canción</h2>
+                    <form id="songForm"><label for="youtubeUrlInput">Enlace de YouTube</label><input id="youtubeUrlInput" type="url" placeholder="https://youtu.be/…" required><button id="addSongBtn" class="primary full">Añadir a la cola</button></form>
+                    <p class="note">Comprueba que la versión incluya la letra o pista de karaoke.</p>
+                </article><article class="card"><h2>Próximos turnos</h2><ol id="songQueue" class="song-list"><li>La cola está vacía.</li></ol></article>
+            </section>
+            <section id="audience" class="tab-panel" hidden>
+                <article id="scoreboard" class="card scoreboard"><div>🔴 Rojo<strong id="redPoints">0</strong></div><span>VS</span><div>🔵 Azul<strong id="bluePoints">0</strong></div></article>
+                <article class="card"><h2>Anima al cantante</h2><p id="energyText" class="note">1000 reacciones disponibles</p><div class="two-buttons"><button id="clapBtn" class="secondary">👏 Aplaudir</button><button id="screamBtn" class="secondary">🗣️ Gritar</button></div><button id="chacalBtn" class="secondary full">🪈 Llamar al Chacal</button></article>
+                <article class="card"><h2>Reacciones</h2><div class="reactions">
+                    <button data-effect="confetti" aria-label="Confeti">🎉</button><button data-effect="fireworks" aria-label="Fuegos artificiales">🎆</button><button data-effect="❤️‍🔥" aria-label="Corazón en llamas">❤️‍🔥</button><button data-effect="🤩" aria-label="Estrella">🤩</button><button data-effect="🎸" aria-label="Guitarra">🎸</button><button data-effect="ovacion" aria-label="Ovación">👏</button>
+                </div></article>
+                <details class="card"><summary>Stickers animados</summary><form id="stickerForm"><label for="giphySearch">Buscar sticker</label><input id="giphySearch" placeholder="Ej. fiesta"><button class="secondary full">Buscar</button></form><div id="giphyResults" class="sticker-results"></div></details>
+                <button id="rankingBtn" class="secondary full">Mostrar ranking en la pantalla</button>
+            </section>
         </div>
-    </div>
-
-    <div class="collapsible-section">
-        <div class="section-header">🔥 INTERACCIÓN EN VIVO <span class="chevron">▼</span></div>
-        <div class="section-content">
-            <div class="energy-text" id="energyText">🎤 Energía: 1000 aplausos</div>
-            <div class="clap-row">
-                <button class="clap-btn" id="clapBtn">👏 APLAUDIR</button>
-                <button class="clap-btn" id="screamBtn">🗣️ GRITAR</button>
-            </div>
-            <button class="btn-full" id="chacalBtn">🪈 Llamar al Chacal</button>
-        </div>
-    </div>
-
-    <div class="collapsible-section">
-        <div class="section-header">🎵 AÑADIR CANCIÓN <span class="chevron">▼</span></div>
-        <div class="section-content">
-            <input type="text" id="youtubeUrlInput" placeholder="Pega enlace de YouTube...">
-            <button class="btn-full btn-primary" id="addSongBtn">➕ Añadir a la cola</button>
-        </div>
-    </div>
-
-    <div class="collapsible-section">
-        <div class="section-header">✨ REACCIONES RÁPIDAS <span class="chevron">▼</span></div>
-        <div class="section-content">
-            <div class="effects-grid">
-                <button class="effect-btn" data-effect="confetti">🎉</button>
-                <button class="effect-btn" data-effect="fireworks">🎆</button>
-                <button class="effect-btn" data-effect="💓">💓</button>
-                <button class="effect-btn" data-effect="❤️‍🔥">❤️‍🔥</button>
-                <button class="effect-btn" data-effect="🤩">🤩</button>
-                <button class="effect-btn" data-effect="✨">✨</button>
-                <button class="effect-btn" data-effect="🎸">🎸</button>
-                <button class="effect-btn" data-effect="👍">👍</button>
-                <button class="effect-btn" data-effect="😂">😂</button>
-                <button class="effect-btn" data-effect="🎤">🎤</button>
-                <button class="effect-btn" data-effect="ovacion">👏</button>
-                <button class="effect-btn" data-effect="aplausos">👐</button>
-                <button class="effect-btn" data-effect="multitud">🏟️</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="collapsible-section collapsed">
-        <div class="section-header">🖼️ STICKERS ANIMADOS <span class="chevron">▼</span></div>
-        <div class="section-content">
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="giphySearch" placeholder="Buscar sticker...">
-                <button class="btn-full" id="searchGiphyBtn" style="width: auto; padding: 0 20px;">🔍</button>
-            </div>
-            <div class="giphy-results" id="giphyResults"></div>
-        </div>
-    </div>
-
-    <div class="collapsible-section collapsed">
-        <div class="section-header">🏆 RANKING <span class="chevron">▼</span></div>
-        <div class="section-content">
-            <button class="btn-full" id="rankingBtn" style="background: #9b59b6;">📊 Ver Ranking Final</button>
-            <p class="energy-text" style="margin-top: 8px;">Muestra el podio de la noche en la pantalla principal</p>
-        </div>
-    </div>
-
-    <div class="footer">FireVoice Karaoke · Mando interactivo</div>
-</div>
-
-<div id="micFullscreen">
-    <div class="on-air">🔴 EN VIVO</div>
-    <div class="mic-icon">🎤</div>
-    <button class="btn-full" id="stopMicBtn" style="background:#e34d4d; width:70%;">⏹️ Detener micrófono</button>
-</div>
-
-<script>
-    const socket = io();
-    let myNickname = '', myTeam = 'red';
-    let totalClicks = 0, MAX_CLICKS = 1000;  // Límite aumentado a 1000
-    let clickBuffer = { claps: 0, screams: 0 };
-    let isMicActive = false, mediaRecorder, micStream;
-    let currentGameMode = 'teams';
-    let activeSongId = null;
-
-    const loginDiv = document.getElementById('loginSection');
-    const mainDiv = document.getElementById('mainSection');
-    const scoreboardDiv = document.getElementById('scoreboard');
-    const redPointsSpan = document.getElementById('redPoints');
-    const bluePointsSpan = document.getElementById('bluePoints');
-    const singerPanel = document.getElementById('singerPanel');
-    const energySpan = document.getElementById('energyText');
-    const userTeamBadge = document.getElementById('userTeamBadge');
-    const voiceAlert = document.getElementById('voiceAlert');
-    const voiceEffectText = document.getElementById('voiceEffectText');
-    const currentSongTitleSpan = document.getElementById('currentSongTitleTV');
-
-    function toggleCollapse(el) { el.classList.toggle('collapsed'); }
-    document.querySelectorAll('.collapsible-section .section-header').forEach(header => {
-        header.onclick = (e) => toggleCollapse(header.parentElement);
-    });
-
-    function selectTeam(team) {
-        myTeam = team;
-        document.getElementById('selectRedBtn').style.borderColor = team === 'red' ? '#ff5773' : '#444';
-        document.getElementById('selectBlueBtn').style.borderColor = team === 'blue' ? '#3b82f6' : '#444';
-    }
-    document.getElementById('selectRedBtn').onclick = () => selectTeam('red');
-    document.getElementById('selectBlueBtn').onclick = () => selectTeam('blue');
-    selectTeam('red');
-
-    document.getElementById('enterBtn').onclick = () => {
-        const nick = document.getElementById('nicknameInput').value.trim();
-        if (!nick) return;
-        myNickname = nick;
-        loginDiv.style.display = 'none';
-        mainDiv.style.display = 'block';
-        socket.emit('join-team', { nickname: myNickname, team: myTeam });
-        document.body.style.background = myTeam === 'red' ? '#0e0610' : '#05101f';
-        userTeamBadge.innerText = myTeam === 'red' ? '🔴 Rojo' : '🔵 Azul';
-        setTimeout(() => searchGiphy('party'), 200);
-    };
-
-    function updateClickerUI() {
-        let remaining = Math.max(0, MAX_CLICKS - totalClicks);
-        energySpan.innerText = `🎤 Energía: ${remaining} aplausos`;
-        if (totalClicks >= MAX_CLICKS) {
-            energySpan.innerText = '⏳ Manos agotadas - espera siguiente canción';
-            document.getElementById('clapBtn').disabled = true;
-            document.getElementById('screamBtn').disabled = true;
-        } else {
-            document.getElementById('clapBtn').disabled = false;
-            document.getElementById('screamBtn').disabled = false;
-        }
-    }
-
-    function registerClick(type) {
-        if (totalClicks >= MAX_CLICKS) return;
-        if (navigator.vibrate) navigator.vibrate(20);
-        let claps = 0, screams = 0;
-        if (type === 'clap') claps = 1;
-        else screams = 1;
-        socket.emit('submit-claps', { claps, screams });
-        totalClicks++;
-        updateClickerUI();
-    }
-    document.getElementById('clapBtn').onclick = () => registerClick('clap');
-    document.getElementById('screamBtn').onclick = () => registerClick('scream');
-
-    document.getElementById('chacalBtn').onclick = () => {
-        socket.emit('vote-chacal');
-        const btn = document.getElementById('chacalBtn');
-        btn.disabled = true;
-        btn.innerText = '🪈 Enviado...';
-        setTimeout(() => { btn.disabled = false; btn.innerText = '🪈 Llamar al Chacal'; }, 4000);
-    };
-
-    document.querySelectorAll('.effect-btn').forEach(btn => {
-        btn.onclick = () => {
-            const effect = btn.dataset.effect;
-            socket.emit('trigger-effect', effect);
-            btn.style.transform = 'scale(0.9)';
-            setTimeout(() => btn.style.transform = '', 150);
-        };
-    });
-
-    document.getElementById('addSongBtn').onclick = () => {
-        const url = document.getElementById('youtubeUrlInput').value.trim();
-        if (url) {
-            socket.emit('add-song', { url: url, nickname: myNickname });
-            document.getElementById('youtubeUrlInput').value = '';
-        } else {
-            alert("Ingresa un enlace de YouTube");
-        }
-    };
-
-    document.getElementById('rankingBtn').onclick = () => socket.emit('request-final-ranking');
-
-    document.getElementById('micBtn').onclick = async () => {
-        if (!navigator.mediaDevices || !window.isSecureContext) return alert("HTTPS necesario");
-        try {
-            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            document.getElementById('micFullscreen').style.display = 'flex';
-            mainDiv.style.display = 'none';
-            isMicActive = true;
-            mediaRecorder = new MediaRecorder(micStream);
-            mediaRecorder.ondataavailable = e => { if(e.data.size) socket.emit('mic-audio', e.data); };
-            mediaRecorder.start(250);
-        } catch(e) { alert("Error de micrófono"); }
-    };
-    document.getElementById('stopMicBtn').onclick = () => {
-        if (isMicActive) {
-            micStream.getTracks().forEach(t => t.stop());
-            mediaRecorder.stop();
-            isMicActive = false;
-        }
-        document.getElementById('micFullscreen').style.display = 'none';
-        mainDiv.style.display = 'block';
-    };
-
-    document.getElementById('inviteBtn').onclick = () => socket.emit('get-participants');
-    socket.on('participants-list', (list) => {
-        let html = '<div style="position:fixed;top:20%;left:10%;width:80%;background:#222;border-radius:28px;padding:20px;z-index:2000;"><h3>Invitar a dúo</h3><ul>';
-        list.forEach(p => { if(p.id !== socket.id) html += `<li>${p.name} <button onclick="socket.emit('invite-participant', {targetSocketId:'${p.id}'})">Invitar</button></li>`; });
-        html += '</ul><button onclick="this.parentElement.remove()">Cerrar</button></div>';
-        document.body.insertAdjacentHTML('beforeend', html);
-    });
-    socket.on('receive-invitation', ({ fromId, fromName }) => {
-        if(confirm(`${fromName} te invita a cantar. ¿Aceptas?`)) socket.emit('accept-invitation', fromId);
-    });
-    socket.on('invitation-accepted', () => alert("¡Dúo activado!"));
-
-    socket.on('state-update', (data) => {
-        if (data.currentSong && data.currentSong.requester === myNickname) {
-            singerPanel.style.display = 'block';
-            currentSongTitleSpan.innerText = data.currentSong.title;
-        } else singerPanel.style.display = 'none';
-
-        if (data.currentSong) {
-            const newSongId = data.currentSong.id;
-            if (newSongId !== activeSongId) {
-                activeSongId = newSongId;
-                totalClicks = 0;
-                updateClickerUI();
-            }
-        }
-
-        if (data.gameMode) currentGameMode = data.gameMode;
-        if (data.teamScores) {
-            redPointsSpan.innerText = data.teamScores.red;
-            bluePointsSpan.innerText = data.teamScores.blue;
-        }
-        if (currentGameMode === 'arcade') scoreboardDiv.style.display = 'none';
-        else scoreboardDiv.style.display = 'flex';
-    });
-
-    socket.on('team-scores', (scores) => {
-        redPointsSpan.innerText = scores.red;
-        bluePointsSpan.innerText = scores.blue;
-    });
-    socket.on('voice-effect-changed', ({ effect }) => {
-        if (effect === 'normal') voiceAlert.style.display = 'none';
-        else { voiceEffectText.innerText = effect; voiceAlert.style.display = 'block'; }
-    });
-    socket.on('game-mode-changed', (mode) => {
-        currentGameMode = mode;
-        scoreboardDiv.style.display = mode === 'teams' ? 'flex' : 'none';
-    });
-
-    async function searchGiphy(q) {
-        const query = q || document.getElementById('giphySearch').value || 'party';
-        const container = document.getElementById('giphyResults');
-        container.innerHTML = '<p>Cargando...</p>';
-        try {
-            const res = await fetch(`/api/giphy?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            container.innerHTML = '';
-            data.data.forEach(sticker => {
-                const img = document.createElement('img');
-                img.src = sticker.images.fixed_height.url;
-                img.className = 'giphy-sticker';
-                img.onclick = () => socket.emit('send-sticker', img.src);
-                container.appendChild(img);
-            });
-        } catch(e) { container.innerHTML = '<p>Error</p>'; }
-    }
-    document.getElementById('searchGiphyBtn').onclick = () => searchGiphy();
-    window.searchGiphy = searchGiphy;
-
-    socket.emit('get-state');
-</script>
+        <footer>FireVoice · Canta, comparte, disfruta</footer>
+    </main>
+    <dialog id="inviteDialog"><h2>Invitar a un dúo</h2><div id="inviteList"></div><button id="closeInviteBtn" class="secondary full">Cerrar</button></dialog>
+    <dialog id="receiveDialog"><h2>Un dúo para el show</h2><p id="invitationText"></p><div class="two-buttons"><button id="acceptInviteBtn" class="primary">Aceptar</button><button id="rejectInviteBtn" class="secondary">Ahora no</button></div></dialog>
 </body>
 </html>

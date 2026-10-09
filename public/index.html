@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karaoke Party - TV Experience</title>
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
@@ -525,13 +525,13 @@
                 </div>
                 <div id="youtubePlayer"></div>
             </div>
-            <div class="controls-container">
-                <button class="magic-btn" id="prevBtn" title="Atrás">⏮️</button>
-                <button class="magic-btn" id="playBtn" title="Play">▶️</button>
-                <button class="magic-btn" id="pauseBtn" title="Pausa">⏸️</button>
-                <button class="magic-btn" id="skipBtn" title="Siguiente">⏭️</button>
-                <button class="magic-btn" id="cinemaBtn" title="Modo Cine">🎬</button>
-                <button class="magic-btn" id="clearBtn" title="Vaciar Cola">🧹</button>
+            <div class="controls-container" id="hostControls" hidden>
+                <button class="magic-btn" id="prevBtn" aria-label="Canción anterior" title="Atrás">⏮️</button>
+                <button class="magic-btn" id="playBtn" aria-label="Reproducir" title="Play">▶️</button>
+                <button class="magic-btn" id="pauseBtn" aria-label="Pausar" title="Pausa">⏸️</button>
+                <button class="magic-btn" id="skipBtn" aria-label="Siguiente canción" title="Siguiente">⏭️</button>
+                <button class="magic-btn" id="cinemaBtn" aria-label="Modo cine" title="Modo Cine">🎬</button>
+                <button class="magic-btn" id="clearBtn" aria-label="Vaciar cola y puntajes" title="Vaciar Cola">🧹</button>
             </div>
         </div>
 
@@ -597,11 +597,49 @@
 </div>
 
 <!-- Botón flotante para cambiar modo (solo administrador) -->
-<div class="mode-toggle-btn" id="modeToggleBtn">🎮 Modo: Equipos</div>
+<button class="mode-toggle-btn" id="modeToggleBtn" hidden>🎮 Modo: Equipos</button>
+<details id="hostAccess" style="position:fixed;bottom:16px;right:16px;z-index:10002;background:#171724;padding:12px;border-radius:16px;max-width:340px;">
+    <summary style="cursor:pointer;">Controles del anfitrión</summary>
+    <form id="hostForm" style="margin-top:12px;">
+        <label for="hostKey">Clave del anfitrión</label>
+        <input id="hostKey" type="password" autocomplete="off" required style="display:block;width:100%;padding:10px;margin:8px 0;background:#fff;color:#111;border-radius:8px;">
+        <button type="submit" style="padding:10px;">Habilitar controles</button>
+    </form>
+    <p id="hostStatus" role="status" style="font-size:.85rem;margin-top:8px;">Pantalla de show · controles bloqueados</p>
+</details>
+<style>[hidden]{display:none!important}button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #ffcf9f;outline-offset:3px}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}.cinema-mode #hostAccess{display:none}</style>
 
 <script>
     // ---------- CONEXIÓN SOCKET Y VARIABLES GLOBALES ----------
-    const socket = io({ transports: ['websocket'] });
+    const socket = io();
+    let isHost = false, hostKey = '', lastSongId = null;
+    function setHostAccess(enabled) {
+        isHost = enabled;
+        document.getElementById('hostControls').hidden = !enabled;
+        document.getElementById('modeToggleBtn').hidden = !enabled;
+        document.getElementById('modeToggleBtn').style.display = enabled ? 'block' : 'none';
+        document.getElementById('hostForm').hidden = enabled;
+        document.getElementById('hostStatus').textContent = enabled ? 'Controles habilitados en esta pantalla' : 'Pantalla de show · controles bloqueados';
+        updateQueue(currentQueue);
+    }
+    function authenticateHost() {
+        socket.timeout(5000).emit('authenticate-host', { key: hostKey }, (error, result) => {
+            setHostAccess(!error && Boolean(result?.ok));
+            if (error || !result?.ok) {
+                hostKey = '';
+                document.getElementById('hostStatus').textContent = error ? 'Sin respuesta. Intenta nuevamente.' : result.message;
+            }
+        });
+    }
+    document.getElementById('hostForm').onsubmit = event => {
+        event.preventDefault();
+        hostKey = document.getElementById('hostKey').value;
+        document.getElementById('hostKey').value = '';
+        authenticateHost();
+    };
+    socket.on('connect', () => { socket.emit('get-state'); if (hostKey) authenticateHost(); });
+    socket.on('disconnect', () => setHostAccess(false));
+    socket.on('error-msg', message => { document.getElementById('hostStatus').textContent = message; });
     let ytPlayer = null;
     let currentVideoId = null;
     let songCounter = 0;
@@ -677,12 +715,12 @@
                         e.target.unMute();
                         e.target.setVolume(100);
                     }
-                    if (e.data === 0) socket.emit('skip-song'); 
+                    if (e.data === 0 && isHost) socket.emit('skip-song');
                 },
                 'onError': (e) => {
                     if ([100, 101, 150].includes(e.data)) {
                         showEffectNotification('bloqueo', 'Sistema');
-                        setTimeout(() => socket.emit('skip-song'), 4000);
+                        setTimeout(() => { if (isHost) socket.emit('skip-song'); }, 4000);
                     }
                 }
             }
@@ -722,7 +760,7 @@
             document.getElementById('scoreBlue').innerText = state.teamScores.blue || 0;
         }
         if (state.currentSongClaps !== undefined) updateApplauseMeter(state.currentSongClaps);
-        if (state.activeVoiceEffect !== undefined) currentVoiceEffectName = state.activeVoiceEffect;
+        if (state.currentSong?.id !== lastSongId) { lastSongId = state.currentSong?.id || null; window.hasStarted = false; window.hasEnded = false; }
         
         if (state.gameMode !== undefined) {
             currentGameMode = state.gameMode;
@@ -929,7 +967,7 @@
                     <strong>${escapeHtml(s.title)}</strong><br>
                     <small style="opacity: 0.7;">👤 ${escapeHtml(s.requester)}</small>
                 </div>
-                <button class="magic-btn" style="background:#ff4757; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>
+                ${isHost ? `<button class="magic-btn" aria-label="Eliminar canción de la cola" style="background:#ff4757; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>` : ''}
             </div>
         `).join('');
         updateCinemaNextSong();
@@ -1084,16 +1122,6 @@
                 if (Math.random() < 0.003) reproducirEfecto('multitud.wav');
             }
             
-            // Control de visibilidad del botón de modo (primeros 10s o últimos 5s)
-            const modeBtn = document.getElementById('modeToggleBtn');
-            if (modeBtn) {
-                if (state === 1 && (currentTime <= 10 || (duration && (duration - currentTime) <= 5))) {
-                    modeBtn.style.display = 'block';
-                } else {
-                    modeBtn.style.display = 'none';
-                }
-            }
-            
             // Mostrar cartel de próximo cantante en los últimos 5 segundos (solo en modo cine)
             if (state === 1 && duration && (duration - currentTime) <= 5 && (duration - currentTime) > 0) {
                 showCinemaNextCardWithPulse();
@@ -1110,74 +1138,11 @@
         if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 10000 });
     });
 
-    // Pipeline de Web Audio API para Modulación de Voz (se mantiene igual)
-    let audioCtx = null;
-    let mainGainNode = null;
-    let delayNode = null;
-    let feedbackGainNode = null;
-    let currentVoiceEffectName = 'normal';
-
-    function initAudioContext() {
-        if (audioCtx) return;
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        mainGainNode = audioCtx.createGain();
-        mainGainNode.gain.value = 1.35;
-        delayNode = audioCtx.createDelay(1.0);
-        delayNode.delayTime.value = 0.22;
-        feedbackGainNode = audioCtx.createGain();
-        feedbackGainNode.gain.value = 0.35;
-        delayNode.connect(feedbackGainNode);
-        feedbackGainNode.connect(delayNode);
-        mainGainNode.connect(audioCtx.destination);
-        delayNode.connect(audioCtx.destination);
-    }
-
-    let micAudioElement = null;
-    let mediaSource = null;
-    let sourceBuffer = null;
-    let audioQueue = [];
-
-    socket.on('mic-audio', async (audioData) => {
-        if (!audioCtx) initAudioContext();
-        if (audioCtx.state === 'suspended') await audioCtx.resume();
-
-        if (!micAudioElement) {
-            micAudioElement = new Audio();
-            mediaSource = new MediaSource();
-            micAudioElement.src = URL.createObjectURL(mediaSource);
-            const track = audioCtx.createMediaElementSource(micAudioElement);
-            track.connect(mainGainNode);
-            track.connect(delayNode);
-            mediaSource.addEventListener('sourceopen', () => {
-                sourceBuffer = mediaSource.addSourceBuffer('audio/webm; codecs="opus"');
-                sourceBuffer.addEventListener('updateend', () => {
-                    if (audioQueue.length > 0 && !sourceBuffer.updating) {
-                        sourceBuffer.appendBuffer(audioQueue.shift());
-                    }
-                });
-            });
-            micAudioElement.play().catch(e => console.log("Click en pantalla requerido"));
-        }
-        if (sourceBuffer && !sourceBuffer.updating && audioQueue.length === 0) {
-            sourceBuffer.appendBuffer(new Uint8Array(audioData));
-        } else {
-            audioQueue.push(new Uint8Array(audioData));
-        }
-    });
-    
+    // Voice is processed on each phone. The screen never monitors the phone microphone.
     socket.on('voice-effect-changed', ({ effect, by }) => {
-        currentVoiceEffectName = effect;
-        const msg = document.createElement('div');
-        msg.className = 'effect-toast';
-        msg.style.borderLeft = '5px solid #a777e3';
-        msg.style.background = 'rgba(20, 10, 35, 0.9)';
-        const fxNames = { normal: 'Voz Normal 🎙️', reverb: 'Eco de Concierto ✨', helium: 'Voz de Helio 🎈', monster: 'Voz de Monstruo 👹' };
-        const name = fxNames[effect] || effect;
-        if (effect === 'normal') msg.innerHTML = `🎙️ Voz restablecida a <strong>Normal</strong>`;
-        else msg.innerHTML = `🔮 <strong>${escapeHtml(by)}</strong> activó: <strong style="color: #a777e3;">${name}</strong>`;
-        document.body.appendChild(msg);
-        setTimeout(() => msg.remove(), 4000);
-        if (effect !== 'normal') playBellSound();
+        const msg = document.createElement('div'); msg.className = 'effect-toast';
+        msg.textContent = `${by}: ${effect === 'reverb' ? 'Eco suave' : 'Voz normal'}`;
+        document.body.appendChild(msg); setTimeout(() => msg.remove(), 4000);
     });
 
     // ---------- UPDATEAPPLAUSEMETER (barra vertical) ----------
@@ -1358,15 +1323,10 @@
         if (scoreboard) scoreboard.style.display = mode === 'teams' ? 'flex' : 'none';
     });
 
-    document.getElementById('modeToggleBtn').addEventListener('click', async () => {
-        const newMode = currentGameMode === 'teams' ? 'arcade' : 'teams';
-        const res = await fetch('/api/set-mode', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode: newMode, key: 'admin123' })
-        });
-        if (!res.ok) alert('No se pudo cambiar el modo');
+    document.getElementById('modeToggleBtn').addEventListener('click', () => {
+        if (isHost) socket.emit('set-mode', { mode: currentGameMode === 'teams' ? 'arcade' : 'teams' });
     });
+
 </script>
 </body>
 </html>
