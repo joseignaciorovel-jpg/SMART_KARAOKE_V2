@@ -69,7 +69,7 @@ test('screen host login enables labeled controls and hides queue actions again o
     const dom = new JSDOM(fs.readFileSync('public/index.html', 'utf8'), { url: 'https://firevoice.test/', runScripts: 'outside-only' });
     const socket = socketMock(), window = dom.window;
     window.io = () => socket; window.confetti = () => {};
-    window.fetch = async () => ({ json: async () => ({ qrImage: 'data:image/png;base64,' }) });
+    window.fetch = async () => ({ ok: true, json: async () => ({ qrImage: 'data:image/png;base64,' }) });
     try {
         for (const [, body] of fs.readFileSync('public/index.html', 'utf8').matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
             if (body.trim()) window.eval(body);
@@ -80,6 +80,7 @@ test('screen host login enables labeled controls and hides queue actions again o
         assert.equal($('hostControls').hidden, false); assert.equal($('hostKey').value, '');
         assert.equal($('skipBtn').getAttribute('aria-label'), 'Siguiente canción');
         socket.disconnect(); assert.equal($('hostControls').hidden, true);
+        await new Promise(resolve => setImmediate(resolve));
     } finally { dom.window.close(); }
 });
 

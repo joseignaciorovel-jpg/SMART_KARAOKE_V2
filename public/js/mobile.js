@@ -121,7 +121,7 @@
     $('clapBtn').onclick = () => react('claps'); $('screamBtn').onclick = () => react('screams');
     $('chacalBtn').onclick = () => {
         if (!socket.connected) return notify('Sin conexión al show.');
-        socket.emit('vote-chacal'); notify('Voto enviado.');
+        socket.timeout(5000).emit('vote-chacal', (error, result) => notify(error ? 'No se confirmó la llamada.' : result?.message || 'Llamada recibida.'));
     };
     document.querySelectorAll('[data-effect]').forEach(button => { button.onclick = () => {
         if (socket.connected) socket.emit('trigger-effect', button.dataset.effect);
@@ -149,6 +149,8 @@
         });
     };
     socket.on('state-update', data => {
+        $('chacalHint').textContent = data.chacalMode === 'competencia' ? 'Modo Competencia: con 50 % de votos, el Chacal pausa la canción hasta 5 segundos.' : 'Modo Fiesta: el Chacal anima sin interrumpir.';
+        $('booBtn').hidden = !data.allowBoo;
         const newId = data.currentSong?.id || null;
         if (receivedState && newId !== activeSongId) {
             void audio.stop(); totalClicks = 0; updateEnergy();

@@ -3,476 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karaoke Party - TV Experience</title>
+    <title>FireVoice · Tu noche, tu escenario</title>
+    <link rel="stylesheet" href="/show-effects.css">
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
-    <style>
-        /* ---------- RESET Y BASE ---------- */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            margin: 0;
-            background: #0a0a2a;
-            color: white;
-            font-family: 'Poppins', 'Segoe UI', system-ui, 'Inter', sans-serif;
-            transition: all 0.3s;
-            overflow-x: hidden;
-        }
-        .tv-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            transition: all 0.3s;
-        }
-        /* ---------- OVERLAY DE INICIO PREMIUM ---------- */
-        #startOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(rgba(10, 10, 42, 0.75), rgba(10, 10, 42, 0.85)), url('/assets/sounds/concierto.webp');
-            background-size: cover;
-            background-position: center;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            z-index: 999999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            color: white;
-            transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-            animation: backgroundFadeIn 1.8s ease-out forwards;
-        }
-        @keyframes backgroundFadeIn {
-            0% { opacity: 0; backdrop-filter: blur(0px); }
-            100% { opacity: 1; backdrop-filter: blur(5px); }
-        }
-        #startOverlay.fade-out {
-            opacity: 0;
-            transform: scale(1.12);
-            pointer-events: none;
-        }
-        .title-wrapper {
-            display: inline-flex;
-            align-items: baseline;
-            gap: 0.15rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            font-family: 'Poppins', sans-serif;
-        }
-        .typing-text {
-            font-size: 5rem !important;
-            font-weight: 600 !important;
-            letter-spacing: 2px;
-            background: linear-gradient(135deg, #ffcc33, #ff66aa);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            overflow: hidden; 
-            border-right: 4px solid #ff66aa;
-            white-space: nowrap;
-            width: 0;
-            display: inline-block;
-            animation: typing 2s steps(12) forwards, 
-                       blink 0.5s step-end infinite alternate,
-                       removeCursor 0.3s forwards 2.5s;
-        }
-        .extra-title {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            opacity: 0;
-            transform: translateX(-10px);
-            animation: fadeInMove 0.6s ease-out forwards;
-            animation-delay: 2.3s;
-        }
-        .extra-y {
-            font-size: 5rem !important;
-            font-weight: 600 !important;
-            background: linear-gradient(135deg, #ffcc33, #ff66aa);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            display: inline-block;
-            letter-spacing: 2px;
-        }
-        .microphone-icon {
-            font-size: 4.5rem;
-            filter: drop-shadow(0 0 8px #ff66aa);
-            display: inline-block;
-            margin-left: 6px;
-            animation: bounceMic 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-            animation-delay: 2.4s;
-            opacity: 0;
-            transform: scale(0.6);
-        }
-        @keyframes fadeInMove {
-            to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes bounceMic {
-            0% { opacity: 0; transform: scale(0.5) rotate(-15deg); }
-            60% { opacity: 1; transform: scale(1.2) rotate(5deg); }
-            100% { opacity: 1; transform: scale(1) rotate(0deg); }
-        }
-        #startOverlay p {
-            font-size: 1.5rem;
-            font-weight: 400;
-            color: #f0f0f0;
-            letter-spacing: 1px;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.8s ease-out forwards;
-            animation-delay: 2.5s;
-            max-width: 80%;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-        .start-btn-huge {
-            background: rgba(255, 0, 170, 0.15);
-            border: 2px solid #ff00aa;
-            border-radius: 60px;
-            padding: 16px 42px;
-            font-size: 1.6rem;
-            font-weight: 600;
-            font-family: 'Poppins', sans-serif;
-            color: white;
-            cursor: pointer;
-            margin-top: 40px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            box-shadow: 0 0 15px rgba(255, 0, 170, 0.4);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            opacity: 0;
-            animation: fadeInUp 0.8s ease-out forwards 2.7s,
-                       pulseGlow 2s infinite alternate ease-in-out 3.5s;
-        }
-        .start-btn-huge:hover {
-            background: #ff00aa;
-            box-shadow: 0 0 30px #ff00aa, 0 0 50px #9b59b6;
-            transform: scale(1.05) translateY(-3px);
-        }
-        @keyframes typing {
-            from { width: 0; }
-            to { width: 12ch; }
-        }
-        @keyframes blink {
-            from, to { border-color: transparent; }
-            50% { border-color: #ff66aa; }
-        }
-        @keyframes removeCursor {
-            to { border-right-color: transparent; }
-        }
-        @keyframes fadeInUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulseGlow {
-            0% { box-shadow: 0 0 15px rgba(255, 0, 170, 0.3); }
-            100% { box-shadow: 0 0 30px rgba(255, 0, 170, 0.7); }
-        }
 
-        /* ---------- MODO CINE (INMERSIVO) ---------- */
-        body.cinema-mode { background: black; }
-        body.cinema-mode .tv-container { padding: 0; max-width: 100%; }
-        body.cinema-mode .qr-area,
-        body.cinema-mode h1,
-        body.cinema-mode .now-playing-card,
-        body.cinema-mode #queueList,
-        body.cinema-mode .magic-btn,
-        body.cinema-mode .btn-danger,
-        body.cinema-mode #nowPlayingInfo {
-            display: none !important;
-        }
-        body.cinema-mode .player-wrapper { margin: 0; padding: 0; }
-        body.cinema-mode #youtubePlayer {
-            height: 100vh !important;
-            width: 100vw !important;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 10000;
-        }
-        body.cinema-mode [style*="display: grid"] { display: block !important; }
-
-        /* ---------- BOTONES MAGIC UI ---------- */
-        .magic-btn {
-            background: linear-gradient(135deg, #6e8efb, #a777e3);
-            border: none;
-            border-radius: 14px;
-            padding: 12px 24px;
-            color: white;
-            font-weight: 600;
-            font-size: 1rem;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.1) inset;
-            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            backdrop-filter: blur(4px);
-        }
-        .magic-btn:hover {
-            transform: scale(1.08) translateY(-3px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255,255,255,0.3) inset;
-            filter: brightness(1.1);
-        }
-        .magic-btn:active {
-            transform: scale(0.96) translateY(2px);
-            transition: 0.05s;
-        }
-        #prevBtn { background: linear-gradient(135deg, #3a3a5a, #1f1f3a); }
-        #playBtn { background: linear-gradient(135deg, #2ecc71, #27ae60); }
-        #pauseBtn { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-        #skipBtn { background: linear-gradient(135deg, #3498db, #2980b9); }
-        #cinemaBtn { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
-        #clearBtn { background: linear-gradient(135deg, #f39c12, #e67e22); }
-
-        /* ---------- REACCIONES LATERALES ---------- */
-        @keyframes floatUp {
-            0% { opacity: 0; transform: translateY(100vh) scale(0.6) rotate(-10deg); }
-            15% { opacity: 1; }
-            85% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-20vh) scale(1.2) rotate(10deg); }
-        }
-        .floating-emoji, .floating-sticker {
-            position: fixed;
-            z-index: 99999;
-            pointer-events: none;
-            animation: floatUp 6s ease-out forwards;
-            filter: drop-shadow(0 0 12px rgba(0,0,0,0.6));
-            will-change: transform, opacity;
-        }
-        .floating-emoji {
-            font-size: 70px;
-            text-shadow: 0 0 15px rgba(255,255,200,0.8);
-        }
-        .floating-sticker {
-            max-width: 180px;
-            max-height: 180px;
-            border-radius: 20px;
-            background: rgba(0,0,0,0.2);
-            backdrop-filter: blur(4px);
-        }
-
-        /* Transición de canción (presentador) */
-        #songTransitionOverlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.96);
-            display: none;
-            flex-direction: column; justify-content: center; align-items: center;
-            z-index: 20000;
-            text-align: center; padding: 20px;
-            backdrop-filter: blur(10px);
-        }
-        #songTransitionOverlay h2 {
-            font-size: 3rem; margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #ffd89b, #ff6a88);
-            -webkit-background-clip: text; color: transparent;
-        }
-        #songTransitionOverlay h1 {
-            font-size: 4.5rem; line-height: 1.1;
-            background: linear-gradient(135deg, #ffcc33, #ff66aa);
-            -webkit-background-clip: text; color: transparent;
-        }
-        #songTransitionOverlay p { font-size: 1.6rem; color: #ccc; margin-top: 1rem; }
-        
-        .effect-toast {
-            position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(8px);
-            color: white; padding: 12px 24px; border-radius: 40px; font-size: 1rem;
-            z-index: 99998; animation: fadeOut 3s forwards; pointer-events: none;
-            border-left: 5px solid #ffaa00;
-        }
-        @keyframes fadeOut {
-            0% { opacity: 1; transform: translateX(0); }
-            70% { opacity: 1; }
-            100% { opacity: 0; transform: translateX(30px); display: none; }
-        }
-
-        /* ---------- RANKING DE LUJO (PODIO + GLASSMORPHISM) ---------- */
-        .ranking-podium {
-            display: flex; justify-content: center; align-items: flex-end;
-            gap: 30px; flex-wrap: wrap; margin: 40px 0;
-        }
-        .podium-card {
-            background: rgba(20, 20, 40, 0.65);
-            backdrop-filter: blur(15px); border-radius: 32px;
-            padding: 20px 25px; text-align: center; min-width: 180px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 20px 35px -15px rgba(0,0,0,0.5);
-        }
-        .podium-card:hover { transform: scale(1.03); background: rgba(40,40,70,0.8); }
-        .winner-card {
-            background: linear-gradient(135deg, #f9d423, #ff4e50);
-            color: #1e1a2f; transform: scale(1.05); border: 2px solid gold; box-shadow: 0 0 35px rgba(255,215,0,0.5);
-        }
-        .second-card { background: linear-gradient(135deg, #e0e0e0, #b0b0b0); color: #1e1a2f; }
-        .third-card { background: linear-gradient(135deg, #cd7f32, #a0522d); color: white; }
-        .podium-icon { font-size: 4rem; margin-bottom: 10px; }
-        .podium-name { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
-        .podium-score { font-size: 1.3rem; font-weight: bold; margin-top: 8px; }
-        .rest-list { width: 80%; max-width: 600px; margin-top: 30px; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); border-radius: 28px; padding: 15px 25px; }
-        .rest-item { display: flex; justify-content: space-between; font-size: 1.2rem; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2); }
-        
-        #finalRankingOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 30% 10%, #0f0c29, #24243e, #0a0a2a);
-            z-index: 30000; display: none; flex-direction: column; align-items: center;
-            justify-content: center; color: white; overflow-y: auto; padding: 40px 20px;
-        }
-        .close-ranking { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 10px 28px; border-radius: 60px; color: white; font-weight: bold; cursor: pointer; margin-top: 30px; transition: 0.2s; }
-        .close-ranking:hover { background: white; color: black; transform: scale(0.97); }
-        .restart-btn { background: white; color: #1a1a2e; border: none; padding: 12px 30px; border-radius: 60px; font-weight: bold; font-size: 1rem; margin-top: 20px; cursor: pointer; transition: 0.2s; }
-        .restart-btn:hover { transform: scale(1.02); background: #ffd966; }
-
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(0px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(2px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(2px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
-
-        /* Botón flotante para cambiar modo (se muestra/oculta dinámicamente) */
-        .mode-toggle-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(8px);
-            border: 1px solid #ff00aa;
-            border-radius: 60px;
-            padding: 10px 20px;
-            color: white;
-            font-weight: bold;
-            z-index: 10000;
-            cursor: pointer;
-            font-size: 0.9rem;
-            box-shadow: 0 0 10px rgba(255,0,170,0.3);
-            transition: all 0.2s;
-            display: none; /* oculto por defecto, se muestra con JS */
-        }
-        .mode-toggle-btn:hover {
-            background: #ff00aa;
-            transform: scale(1.02);
-        }
-
-        /* ===== BARRA VERTICAL ESTILO GUITAR HERO ===== */
-        .player-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 900px;
-            aspect-ratio: 16 / 9;
-            border-radius: 24px;
-            overflow: visible !important;
-            background: #000;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-        .slim-vertical-wrapper {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 14px;
-            height: 70%;
-            z-index: 30;
-            pointer-events: none;
-            border-radius: 20px;
-        }
-        .vertical-meter-slim {
-            width: 100%;
-            height: 100%;
-            background: rgba(30, 30, 40, 0.9);
-            border-radius: 20px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
-        }
-        .rgb-layer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 0%;
-            background: linear-gradient(0deg, #ff0040, #ff8000, #ffff00, #00ffcc, #3a86ff, #d600ff);
-            background-size: 100% 300%;
-            transition: height 0.08s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            border-radius: 20px;
-            box-shadow: 0 0 8px rgba(255, 80, 0, 0.6);
-        }
-        .rgb-layer.high-energy {
-            animation: rgbFlow 0.15s infinite alternate, intenseVibe 0.2s infinite alternate;
-            background: linear-gradient(0deg, #ff00aa, #ffaa00, #00ff55, #00ffff, #ff44ff);
-            background-size: 100% 400%;
-            box-shadow: 0 0 20px #ff44aa, inset 0 0 6px #ffffaa;
-            filter: brightness(1.3) contrast(1.2);
-        }
-        @keyframes rgbFlow {
-            0% { filter: brightness(1) hue-rotate(0deg); background-position: 0% 0%; }
-            100% { filter: brightness(1.5) hue-rotate(12deg); background-position: 0% 40%; }
-        }
-        @keyframes intenseVibe {
-            0% { box-shadow: 0 0 12px #ff66cc, inset 0 0 4px #ffdd88; }
-            100% { box-shadow: 0 0 28px #ff99ff, inset 0 0 12px #ffffaa; }
-        }
-        .stats-slim {
-            position: absolute;
-            bottom: 20px;
-            left: 50px;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            border-radius: 40px;
-            padding: 8px 16px;
-            text-align: left;
-            font-family: monospace;
-            z-index: 30;
-            pointer-events: none;
-            border-left: 4px solid #ffaa33;
-        }
-        .percentage-slim { font-size: 1.2rem; font-weight: 800; color: #ffd966; line-height: 1; }
-        .emoji-strip { font-size: 1.2rem; letter-spacing: 2px; }
-        .reaction-message-slim { font-size: 0.7rem; color: #ffccaa; }
-
-        /* Animación de pulso para la tarjeta de próximo cantante */
-        .pulse-animation {
-            animation: cardPulse 0.8s ease-in-out 3;
-        }
-        @keyframes cardPulse {
-            0% { transform: scale(1); opacity: 0.9; border-left-color: #ffcc33; }
-            50% { transform: scale(1.05); opacity: 1; border-left-color: #ffaa00; box-shadow: 0 0 15px rgba(255,204,51,0.8); }
-            100% { transform: scale(1); opacity: 0.9; border-left-color: #ffcc33; }
-        }
-    </style>
 </head>
 <body>
 
 <!-- OVERLAY DE INICIO PREMIUM -->
-<div id="startOverlay">
-    <div class="title-wrapper">
-        <span class="typing-text">KARAOKE PARTY</span>
-        <span class="extra-title">
-            <span class="extra-y">Y</span>
-            <span class="microphone-icon">🎤</span>
-        </span>
+<section id="startOverlay" aria-labelledby="welcomeTitle">
+    <div class="welcome-shell">
+        <div class="welcome-copy"><p class="eyebrow">EL ESCENARIO ES TUYO</p>
+            <h1 id="welcomeTitle" class="wordmark">FireVoice</h1>
+            <p class="welcome-tagline">Tu noche.<br>Tu escenario.</p>
+            <p class="welcome-description">Elige tu canción, reúne a tu público y canta.</p>
+            <div class="welcome-actions"><button id="startBtn" class="primary" onclick="iniciarKaraoke()">Abrir pantalla del show <span aria-hidden="true">↗</span></button><button id="welcomeHostBtn" class="secondary">Administrar como anfitrión</button></div>
+            <p class="audio-routing">La música suena en esta pantalla. Tu voz puede salir desde el celular al activar el micrófono local.</p>
+            <label class="check-label"><input id="welcomeSound" type="checkbox" checked> Sonido breve de bienvenida</label>
+        </div>
+        <article class="welcome-join panel"><p class="eyebrow">ÚNETE DESDE TU CELULAR</p><h2>Escanea. Elige. Canta.</h2>
+            <img id="welcomeQr" class="qr-image" alt="QR para unirse al show" hidden>
+            <p class="qr-status">Preparando código QR…</p>
+            <ol class="join-steps"><li>Escanea y entra con tu nombre.</li><li>Añade tu canción de YouTube.</li><li>Activa tu micrófono cuando quieras cantar.</li></ol>
+            <a class="join-link" href="/join.html">Unirme desde este dispositivo ↗</a>
+        </article>
+        <footer class="welcome-credit">Creado por José Romero Velásquez · FireVoice</footer>
     </div>
-    <p>Escanea el código QR desde tu celular para unirte al show</p>
-    <button class="start-btn-huge" onclick="iniciarKaraoke()">Iniciar Pantalla</button>
-    <div class="developer-credit">
-        Built by José Romero Velásquez © 2026 | Powered by FireVoice
-    </div>
-</div>
+</section>
 
 <!-- OVERLAY DE TRANSICIÓN DE CANCIONES (PRESENTADOR) -->
 <div id="songTransitionOverlay">
@@ -483,71 +44,32 @@
 </div>
 
 <!-- CONTENEDOR PRINCIPAL DE LA TV -->
-<div class="tv-container">
-    <!-- HEADER: Logo, marcador equipos y QR (fila superior) -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-        <div class="logo-area" style="font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #FFB347, #FF6B6B); background-clip: text; -webkit-background-clip: text; color: transparent;">🎤 FireVoice</div>
-        
-        <!-- MARCADOR DE EQUIPOS -->
-        <div id="teamScoreboard" style="display: flex; gap: 20px; background: rgba(255,255,255,0.03); padding: 10px 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 5px 15px rgba(0,0,0,0.3); min-width: 280px; justify-content: space-around;">
-            <div style="text-align: center;">
-                <h4 style="color: #ff4757; font-size: 11px; letter-spacing: 1px; margin-bottom: 2px;">🔴 ROJO</h4>
-                <span id="scoreRed" style="font-size: 24px; font-weight: 800; color: #ff4757;">0</span>
-            </div>
-            <div style="width: 1px; background: rgba(255,255,255,0.1); align-self: stretch;"></div>
-            <div style="text-align: center;">
-                <h4 style="color: #00d2ff; font-size: 11px; letter-spacing: 1px; margin-bottom: 2px;">🔵 AZUL</h4>
-                <span id="scoreBlue" style="font-size: 24px; font-weight: 800; color: #00d2ff;">0</span>
-            </div>
-        </div>
-
-        <div class="qr-area" style="text-align: center;">
-            <img id="qrImage" alt="QR para unirse" width="110" style="border-radius: 16px; background: white; padding: 5px;">
-            <p style="color:white; font-size:12px; margin-top:5px;">📲 Escanea para unirse</p>
-        </div>
-    </div>
-
-    <!-- CONTENEDOR PRINCIPAL: DOS COLUMNAS -->
-    <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
-        <!-- COLUMNA IZQUIERDA: REPRODUCTOR + CONTROLES -->
-        <div>
+<main class="tv-container" id="showMain" inert>
+    <header class="tv-header"><a class="show-brand" href="/" aria-label="FireVoice, volver al inicio"><span class="wordmark">FireVoice</span><small>TU NOCHE. TU ESCENARIO.</small></a>
+        <div id="teamScoreboard" class="team-scoreboard" aria-label="Puntajes por equipo"><div class="red"><span>ROJO</span><strong id="scoreRed">0</strong></div><span class="versus">VS</span><div class="blue"><span>AZUL</span><strong id="scoreBlue">0</strong></div></div>
+        <div class="header-actions"><span id="showConnection" class="live-badge" role="status">Conectando…</span><button id="fullscreenBtn" class="secondary" aria-label="Pantalla completa" aria-pressed="false">⛶ <span>Pantalla completa</span></button><button id="hostOpenBtn" class="secondary">Anfitrión</button></div>
+    </header>
+    <div class="tv-main-grid">
+        <section class="performance" aria-label="Escenario">
             <div class="player-wrapper">
-                <!-- BARRA VERTICAL -->
-                <div class="slim-vertical-wrapper">
-                    <div class="vertical-meter-slim" id="slimMeter">
-                        <div class="rgb-layer" id="rgbLayer"></div>
-                    </div>
-                </div>
-                <div class="stats-slim">
-                    <div class="percentage-slim" id="percentDisplay">0%</div>
-                    <div class="emoji-strip" id="reactionEmoji">🎤✨</div>
-                    <div class="reaction-message-slim" id="reactionMsg">🔊 Esperando reacciones...</div>
-                </div>
-                <div id="youtubePlayer"></div>
+                <aside class="energy-rail" aria-label="Energía del público"><span class="rail-label">ENERGÍA</span><div class="slim-vertical-wrapper"><div class="vertical-meter-slim" id="slimMeter" role="meter" aria-label="Energía del público" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="rgb-layer" id="rgbLayer"></div></div></div><strong id="percentDisplay">0%</strong></aside>
+                <div class="video-stage"><div id="youtubePlayer"></div><div id="stageEmpty" class="stage-empty"><span class="stage-symbol" aria-hidden="true">✦</span><p class="eyebrow">FIREVOICE ESTÁ LISTO</p><h2>Tu próxima gran<br>canción empieza aquí.</h2><p>Escanea el QR y añade la primera canción.</p><a class="join-link" href="/join.html">Elegir mi canción ↗</a></div><p id="playerMessage" class="player-message" role="status" hidden></p></div>
             </div>
-            <div class="controls-container" id="hostControls" hidden>
-                <button class="magic-btn" id="prevBtn" aria-label="Canción anterior" title="Atrás">⏮️</button>
-                <button class="magic-btn" id="playBtn" aria-label="Reproducir" title="Play">▶️</button>
-                <button class="magic-btn" id="pauseBtn" aria-label="Pausar" title="Pausa">⏸️</button>
-                <button class="magic-btn" id="skipBtn" aria-label="Siguiente canción" title="Siguiente">⏭️</button>
-                <button class="magic-btn" id="cinemaBtn" aria-label="Modo cine" title="Modo Cine">🎬</button>
-                <button class="magic-btn" id="clearBtn" aria-label="Vaciar cola y puntajes" title="Vaciar Cola">🧹</button>
+            <div class="now-playing-card"><div class="singer-avatar" aria-hidden="true">♫</div><div class="now-playing-copy"><p class="eyebrow">EN EL ESCENARIO</p><div id="currentSongDisplay"><h2>El próximo artista puedes ser tú</h2><p>Esperando la primera canción</p></div></div>
+                <div class="controls-container" id="hostControls" hidden><button class="magic-btn" id="prevBtn" aria-label="Canción anterior" title="Anterior">⏮<small>Anterior</small></button><button class="magic-btn" id="playBtn" aria-label="Reproducir" title="Reproducir">▶<small>Reproducir</small></button><button class="magic-btn" id="pauseBtn" aria-label="Pausar" title="Pausar">Ⅱ<small>Pausar</small></button><button class="magic-btn" id="skipBtn" aria-label="Siguiente canción" title="Siguiente">⏭<small>Siguiente</small></button><button class="magic-btn" id="cinemaBtn" aria-label="Modo escenario" aria-pressed="false" title="Modo escenario">⛶<small>Escenario</small></button></div>
             </div>
-        </div>
-
-        <!-- COLUMNA DERECHA: AHORA SUENA + COLA -->
-        <div id="rightColumn" style="display: flex; flex-direction: column; gap: 20px;">
-            <div class="now-playing-card" style="background: rgba(255,255,255,0.05); border-radius: 28px; padding: 15px;">
-                <h3>🎵 Ahora suena:</h3>
-                <div id="currentSongDisplay">Esperando canciones...</div>
-            </div>
-            <div style="flex: 1; display: flex; flex-direction: column; background: rgba(0,0,0,0.3); border-radius: 28px; padding: 15px; overflow: hidden;">
-                <h3>📋 Siguientes en la cola</h3>
-                <div id="queueList" style="flex: 1; overflow-y: auto; padding-right: 5px; max-height: none;"></div>
-            </div>
-        </div>
+            <div class="audience-strip"><span id="reactionEmoji" aria-hidden="true">👏</span><p id="reactionMsg">Anima al cantante con tus reacciones.</p><span class="audience-caption">Energía del público · no mide el micrófono</span></div>
+        </section>
+        <aside id="rightColumn" class="right-column" aria-label="Turnos y participación">
+            <article class="next-card panel"><p class="eyebrow">SIGUE DESPUÉS <span class="next-number">01</span></p><h2 id="nextSinger">Tu lugar en el escenario</h2><p id="nextTitle">Añade una canción para reservar tu turno.</p></article>
+            <article class="queue-section panel"><div class="section-heading"><h2>Próximos turnos</h2><span id="queueCount" class="count-pill">0</span></div><div id="queueList"></div></article>
+            <article class="qr-area panel"><img id="qrImage" class="qr-image" alt="QR para unirse" hidden><div><h2>Únete al show</h2><p>Escanea desde tu celular</p><p class="qr-status">Preparando código QR…</p><a class="join-link" href="/join.html">Abrir control ↗</a></div></article>
+            <p class="sidebar-note">Aplausos, gritos y reacciones animan el escenario.</p>
+        </aside>
     </div>
-</div>
+    <footer class="show-footer">FireVoice · Hecho para compartir el escenario</footer>
+</main>
+<div id="immersiveToolbar" class="immersive-toolbar" hidden><button id="exitStageBtn" class="secondary">← Salir del escenario</button><span id="immersiveSinger">FireVoice</span><button id="immersivePauseBtn" class="secondary">Pausar</button></div>
 
 <!-- Cartel para modo cine: muestra la siguiente canción (oculto por defecto) -->
 <div id="cinemaNextSongCard" style="display: none; position: fixed; bottom: 12px; left: 300px; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); border-radius: 20px; padding: 10px 16px; z-index: 10002; pointer-events: none; border-left: 4px solid #ffcc33; max-width: 280px;">
@@ -596,18 +118,11 @@
     </div>
 </div>
 
-<!-- Botón flotante para cambiar modo (solo administrador) -->
-<button class="mode-toggle-btn" id="modeToggleBtn" hidden>🎮 Modo: Equipos</button>
-<details id="hostAccess" style="position:fixed;bottom:16px;right:16px;z-index:10002;background:#171724;padding:12px;border-radius:16px;max-width:340px;">
-    <summary style="cursor:pointer;">Controles del anfitrión</summary>
-    <form id="hostForm" style="margin-top:12px;">
-        <label for="hostKey">Clave del anfitrión</label>
-        <input id="hostKey" type="password" autocomplete="off" required style="display:block;width:100%;padding:10px;margin:8px 0;background:#fff;color:#111;border-radius:8px;">
-        <button type="submit" style="padding:10px;">Habilitar controles</button>
-    </form>
-    <p id="hostStatus" role="status" style="font-size:.85rem;margin-top:8px;">Pantalla de show · controles bloqueados</p>
-</details>
-<style>[hidden]{display:none!important}button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #ffcf9f;outline-offset:3px}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}.cinema-mode #hostAccess{display:none}</style>
+<dialog id="hostDialog" aria-labelledby="hostDialogTitle"><div class="dialog-heading"><h2 id="hostDialogTitle">Tu cabina de anfitrión</h2><button id="closeHostBtn" class="text-button" aria-label="Cerrar controles del anfitrión">✕</button></div><p class="muted">Controla el show desde esta pantalla.</p>
+    <form id="hostForm"><label for="hostKey">Clave del anfitrión</label><input id="hostKey" type="password" autocomplete="off" required><button type="submit" class="primary">Habilitar controles</button><p class="muted">Usa la clave HOST_KEY del servicio. No es la contraseña de Railway.</p></form>
+    <p id="hostStatus" role="status">Controles bloqueados</p>
+    <section id="hostSettings" hidden><label for="chacalMode">Chacal de la Zampoña</label><select id="chacalMode"><option value="fiesta">Fiesta · reacción sin interrumpir</option><option value="competencia">Competencia · pausa con 50 % de votos</option></select><p class="muted">En competencia, el Chacal pausa hasta 5 segundos y continúa si la canción estaba sonando.</p><label class="check-label"><input id="allowBoo" type="checkbox"> Permitir abucheo breve</label><label for="effectsVolume">Volumen de los efectos <output id="effectsVolumeValue">35 %</output></label><input id="effectsVolume" type="range" min="0" max="70" value="35"><p class="muted">Este volumen afecta solo esta pantalla, no el micrófono del celular.</p><div class="host-sounds"><button class="secondary" data-host-sound="aplausos">Aplausos</button><button class="secondary" data-host-sound="ovacion">Ovación</button><button class="secondary" data-host-sound="abucheo">Abucheo</button></div><button id="modeToggleBtn" class="secondary" hidden>Modo: Equipos</button><button id="clearBtn" class="danger">Vaciar cola y puntajes</button><button id="lockHostBtn" class="text-button">Bloquear controles</button></section>
+</dialog>
 
 <script>
     // ---------- CONEXIÓN SOCKET Y VARIABLES GLOBALES ----------
@@ -617,7 +132,8 @@
         isHost = enabled;
         document.getElementById('hostControls').hidden = !enabled;
         document.getElementById('modeToggleBtn').hidden = !enabled;
-        document.getElementById('modeToggleBtn').style.display = enabled ? 'block' : 'none';
+        document.getElementById('hostSettings').hidden = !enabled;
+        document.getElementById('immersivePauseBtn').hidden = !enabled;
         document.getElementById('hostForm').hidden = enabled;
         document.getElementById('hostStatus').textContent = enabled ? 'Controles habilitados en esta pantalla' : 'Pantalla de show · controles bloqueados';
         updateQueue(currentQueue);
@@ -637,8 +153,8 @@
         document.getElementById('hostKey').value = '';
         authenticateHost();
     };
-    socket.on('connect', () => { socket.emit('get-state'); if (hostKey) authenticateHost(); });
-    socket.on('disconnect', () => setHostAccess(false));
+    socket.on('connect', () => { document.getElementById('showConnection').textContent = 'Show conectado'; socket.emit('get-state'); if (hostKey) authenticateHost(); });
+    socket.on('disconnect', () => { setHostAccess(false); cancelChacalPause(false); document.getElementById('showConnection').textContent = 'Sin conexión'; });
     socket.on('error-msg', message => { document.getElementById('hostStatus').textContent = message; });
     let ytPlayer = null;
     let currentVideoId = null;
@@ -684,17 +200,12 @@
     // ---------- YOUTUBE API Y ARRANQUE SEGURO ----------
     function iniciarKaraoke() {
         const overlay = document.getElementById('startOverlay');
-        try {
-            const crowdAudio = new Audio('/assets/sounds/multitud.wav');
-            crowdAudio.volume = 0.6;
-            crowdAudio.play().catch(err => console.log("Audio multitud bloqueado:", err));
-        } catch(e) { console.log("Error audio"); }
-        overlay.classList.add('fade-out');
-        setTimeout(() => { overlay.style.display = 'none'; }, 800);
-        try {
-            const utterance = new SpeechSynthesisUtterance('');
-            window.speechSynthesis.speak(utterance);
-        } catch (e) { console.log("TTS init blocked or unsupported:", e); }
+        if (window.showStarted) return;
+        window.showStarted = true;
+        overlay.hidden = true;
+        document.getElementById('showMain').inert = false;
+        if (document.getElementById('welcomeSound').checked) reproducirEfecto('multitud.wav', 1600);
+        prepareEffectsAudio();
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         document.head.appendChild(tag);
@@ -712,12 +223,15 @@
                 },
                 'onStateChange': (e) => { 
                     if (e.data === 1) {
+                        document.getElementById('playerMessage').hidden = true;
                         e.target.unMute();
                         e.target.setVolume(100);
                     }
                     if (e.data === 0 && isHost) socket.emit('skip-song');
                 },
                 'onError': (e) => {
+                    document.getElementById('playerMessage').hidden = false;
+                    document.getElementById('playerMessage').textContent = 'YouTube no pudo reproducir este video. Prueba otra versión de karaoke.';
                     if ([100, 101, 150].includes(e.data)) {
                         showEffectNotification('bloqueo', 'Sistema');
                         setTimeout(() => { if (isHost) socket.emit('skip-song'); }, 4000);
@@ -728,9 +242,11 @@
     }
 
     // Cargar QR desde el servidor
-    fetch('/config').then(r => r.json()).then(d => {
-        if(d.qrImage) document.getElementById('qrImage').src = d.qrImage;
-    }).catch(() => console.log("QR no disponible"));
+    fetch('/config').then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(d => {
+        if (!d.qrImage) throw new Error();
+        for (const id of ['qrImage', 'welcomeQr']) { const img = document.getElementById(id); img.src = d.qrImage; img.hidden = false; }
+        document.querySelectorAll('.qr-status').forEach(el => { el.hidden = true; });
+    }).catch(() => { document.querySelectorAll('.qr-status').forEach(el => { el.textContent = 'QR no disponible. Usa el enlace para unirte.'; }); });
 
     // ---------- FUNCIÓN PARA ACTUALIZAR CARTEL EN MODO CINE ----------
     function updateCinemaNextSong() {
@@ -751,6 +267,11 @@
     // ---------- SOCKET: ESTADO, COLA, CANCIONES ----------
     socket.on('state-update', (state) => {
         currentQueue = state.queue || [];
+        if ((state.currentSong?.id || null) !== lastSongId) cancelChacalPause(false);
+        if (state.chacalMode) { if (state.chacalMode !== chacalMode) cancelChacalPause(true); chacalMode = state.chacalMode; document.getElementById('chacalMode').value = chacalMode; }
+        document.getElementById('allowBoo').checked = Boolean(state.allowBoo);
+        document.getElementById('stageEmpty').hidden = Boolean(state.currentSong);
+        document.getElementById('playerMessage').hidden = true;
         updateQueue(state.queue);
         updateNowPlaying(state.currentSong);
         updateCinemaNextSong();
@@ -890,7 +411,8 @@
 
     socket.on('effect-triggered', ({ effect, from }) => {
         const sonidos = { 'ovacion': 'ovacion.mp3', 'aplausos': 'aplausos.wav', 'multitud': 'multitud.wav' };
-        if (sonidos[effect]) {
+        if (effect === 'abucheo') { playBoo(); showEffectNotification('Abucheo breve', from); }
+        else if (sonidos[effect]) {
             reproducirEfecto(sonidos[effect]);
         } 
         else if (effect === 'confetti' || effect === 'fireworks') {
@@ -950,142 +472,138 @@
     });
 
     // ---------- UI AUXILIAR ----------
-    function updateQueue(queue) {
+    function updateQueue(queue = []) {
         const container = document.getElementById('queueList');
-        if (!queue || !queue.length) { 
-            container.innerHTML = `
-                <div class="empty-queue-msg">
-                    ✨ ¡LA PISTA ES TODA TUYA! ✨ <br>
-                    <span style="font-size: 1rem; color: #fff; margin-top: 10px; display: block;">Sé el primero en cantar</span>
-                </div>`; 
-            return; 
-        }
-        container.innerHTML = queue.map(s => `
-            <div class="queue-item">
-                <img src="${s.thumbnail}" width="60" style="border-radius:12px">
-                <div style="flex:1">
-                    <strong>${escapeHtml(s.title)}</strong><br>
-                    <small style="opacity: 0.7;">👤 ${escapeHtml(s.requester)}</small>
-                </div>
-                ${isHost ? `<button class="magic-btn" aria-label="Eliminar canción de la cola" style="background:#ff4757; padding:6px 12px;" onclick="socket.emit('remove-song', '${s.id}')">X</button>` : ''}
-            </div>
-        `).join('');
+        const next = queue[0];
+        document.getElementById('nextSinger').textContent = next?.requester || 'Tu lugar en el escenario';
+        document.getElementById('nextTitle').textContent = next?.title || 'Añade una canción para reservar tu turno.';
+        document.getElementById('queueCount').textContent = queue.length;
+        container.replaceChildren();
+        const visible = isHost ? queue : queue.slice(1, 4);
+        if (!visible.length) { const empty = document.createElement('p'); empty.className = 'empty-queue-msg'; empty.textContent = next ? 'Por ahora, este es el último turno.' : 'La cola está abierta. ¿Quién se anima?'; container.append(empty); }
+        visible.forEach((song, index) => {
+            const item = document.createElement('div'); item.className = 'queue-item';
+            const number = document.createElement('span'); number.className = 'queue-number'; number.textContent = String(index + (isHost ? 1 : 2)).padStart(2, '0');
+            const text = document.createElement('div'); text.className = 'queue-copy';
+            const name = document.createElement('strong'); name.textContent = song.requester;
+            const title = document.createElement('small'); title.textContent = song.title;
+            text.append(name, title); item.append(number, text);
+            if (isHost) { const remove = document.createElement('button'); remove.className = 'text-button'; remove.textContent = '✕'; remove.setAttribute('aria-label', 'Eliminar canción de la cola'); remove.onclick = () => socket.emit('remove-song', song.id); item.append(remove); }
+            container.append(item);
+        });
+        if (!isHost && queue.length > 4) { const more = document.createElement('p'); more.className = 'muted'; more.textContent = `Y ${queue.length - 4} turnos más`; container.append(more); }
         updateCinemaNextSong();
     }
-
     function updateNowPlaying(song) {
-        const container = document.getElementById('currentSongDisplay');
-        if(song) container.innerHTML = `<div style="display:flex; gap:15px;"><img src="${song.thumbnail}" width="80" style="border-radius:12px"><div><h3>${escapeHtml(song.title)}</h3><p>👤 ${escapeHtml(song.requester)}</p></div></div>`;
-        else container.innerHTML = '<p>⏸️ Esperando canciones...</p>';
+        const container = document.getElementById('currentSongDisplay'); container.replaceChildren();
+        const name = document.createElement('h2'); name.textContent = song?.requester || 'El próximo artista puedes ser tú';
+        const title = document.createElement('p'); title.textContent = song?.title || 'Esperando la primera canción';
+        container.append(name, title);
+        document.getElementById('immersiveSinger').textContent = song ? `${song.requester} · ${song.title}` : 'FireVoice · Esperando canción';
     }
-
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    function escapeHtml(str) { return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
     // Botones de control
     document.getElementById('playBtn').onclick = () => ytPlayer?.playVideo();
-    document.getElementById('pauseBtn').onclick = () => ytPlayer?.pauseVideo();
+    document.getElementById('pauseBtn').onclick = () => { chacalWasPlaying = false; ytPlayer?.pauseVideo(); };
     document.getElementById('prevBtn').onclick = () => socket.emit('prev-song');
     document.getElementById('skipBtn').onclick = () => socket.emit('skip-song');
     document.getElementById('clearBtn').onclick = () => { if(confirm('¿Vaciar cola y puntajes?')) socket.emit('clear-queue'); };
     
-    // --- MODO CINE CON REUBICACIÓN DE BARRA Y STATS, Y OCULTAR/MOSTRAR COLUMNA DERECHA Y CARTEL ---
-    let originalBarContainer = null;
-    let originalStatsContainer = null;
-
-    function moveToCinemaMode() {
-        const slimWrapper = document.querySelector('.slim-vertical-wrapper');
-        const statsSlim = document.querySelector('.stats-slim');
-        if (!slimWrapper || !statsSlim) return;
-
-        originalBarContainer = slimWrapper.parentNode;
-        originalStatsContainer = statsSlim.parentNode;
-
-        let cinemaOverlay = document.getElementById('cinemaOverlay');
-        if (!cinemaOverlay) {
-            cinemaOverlay = document.createElement('div');
-            cinemaOverlay.id = 'cinemaOverlay';
-            cinemaOverlay.style.position = 'fixed';
-            cinemaOverlay.style.top = '0';
-            cinemaOverlay.style.left = '0';
-            cinemaOverlay.style.width = '100%';
-            cinemaOverlay.style.height = '100%';
-            cinemaOverlay.style.pointerEvents = 'none';
-            cinemaOverlay.style.zIndex = '10001';
-            document.body.appendChild(cinemaOverlay);
-        }
-        cinemaOverlay.appendChild(slimWrapper);
-        cinemaOverlay.appendChild(statsSlim);
-        slimWrapper.style.position = 'absolute';
-        slimWrapper.style.left = '20px';
-        slimWrapper.style.top = '50%';
-        slimWrapper.style.transform = 'translateY(-50%)';
-        slimWrapper.style.height = '90%';   // Ajuste en modo cine: más alta
-        statsSlim.style.position = 'absolute';
-        statsSlim.style.bottom = '20px';
-        statsSlim.style.left = '20px';
-        statsSlim.style.transform = 'none';
-        // Ajustar la barra interna para que herede altura
-        const meter = slimWrapper.querySelector('.vertical-meter-slim');
-        if (meter) meter.style.height = '100%';
-
-        // Ocultar columna derecha
-        const rightCol = document.getElementById('rightColumn');
-        if (rightCol) rightCol.style.display = 'none';
-        // No mostramos el cartel aquí, se mostrará automáticamente al final de la canción
-        const nextCard = document.getElementById('cinemaNextSongCard');
-        if (nextCard) nextCard.style.display = 'none'; // aseguramos oculto
+    // Two independent display controls: fullscreen preserves layout; stage focuses video.
+    let immersiveTimer;
+    async function toggleFullscreen() {
+        try {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.());
+            } else {
+                const request = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+                if (!request) throw new Error();
+                await request.call(document.documentElement);
+            }
+        } catch (_) { document.getElementById('showConnection').textContent = 'Pantalla completa no disponible en este navegador'; }
     }
-
-    function restoreFromCinemaMode() {
-        const slimWrapper = document.querySelector('.slim-vertical-wrapper');
-        const statsSlim = document.querySelector('.stats-slim');
-        const cinemaOverlay = document.getElementById('cinemaOverlay');
-        if (!slimWrapper || !statsSlim || !cinemaOverlay) return;
-
-        slimWrapper.style.position = '';
-        slimWrapper.style.left = '';
-        slimWrapper.style.top = '';
-        slimWrapper.style.transform = '';
-        slimWrapper.style.height = '';
-        statsSlim.style.position = '';
-        statsSlim.style.bottom = '';
-        statsSlim.style.left = '';
-        statsSlim.style.transform = '';
-        const meter = slimWrapper.querySelector('.vertical-meter-slim');
-        if (meter) meter.style.height = '';
-
-        if (originalBarContainer) originalBarContainer.appendChild(slimWrapper);
-        if (originalStatsContainer) originalStatsContainer.appendChild(statsSlim);
-        cinemaOverlay.remove();
-
-        const rightCol = document.getElementById('rightColumn');
-        if (rightCol) rightCol.style.display = '';
-        const nextCard = document.getElementById('cinemaNextSongCard');
-        if (nextCard) nextCard.style.display = 'none';
+    function setStage(enabled) {
+        document.body.classList.toggle('cinema-mode', enabled);
+        document.getElementById('immersiveToolbar').hidden = !enabled;
+        document.getElementById('cinemaBtn').setAttribute('aria-pressed', String(enabled));
+        document.getElementById('showMain').querySelector('.tv-header').inert = enabled;
+        document.getElementById('rightColumn').inert = enabled;
+        if (enabled) { document.getElementById('hostDialog').close(); wakeStageControls(); document.getElementById('exitStageBtn').focus(); }
+        else { clearTimeout(immersiveTimer); document.getElementById('cinemaNextSongCard').style.display = 'none'; document.getElementById('cinemaBtn').focus(); }
     }
+    function wakeStageControls() {
+        document.body.classList.add('stage-awake'); clearTimeout(immersiveTimer);
+        immersiveTimer = setTimeout(() => { if (!document.getElementById('immersiveToolbar').contains(document.activeElement)) document.body.classList.remove('stage-awake'); }, 3000);
+    }
+    document.getElementById('fullscreenBtn').onclick = toggleFullscreen;
+    document.getElementById('cinemaBtn').onclick = () => { if (!isHost) return; setStage(!document.body.classList.contains('cinema-mode')); };
+    document.getElementById('exitStageBtn').onclick = () => setStage(false);
+    document.getElementById('immersivePauseBtn').onclick = () => { if (!isHost || !ytPlayer) return; if (ytPlayer.getPlayerState?.() === 1) { chacalWasPlaying = false; ytPlayer.pauseVideo(); } else ytPlayer.playVideo(); };
+    document.addEventListener('pointermove', wakeStageControls);
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && document.body.classList.contains('cinema-mode')) setStage(false); else wakeStageControls(); });
+    function syncFullscreen() {
+        const enabled = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+        document.getElementById('fullscreenBtn').setAttribute('aria-pressed', String(enabled));
+        document.getElementById('fullscreenBtn').querySelector('span').textContent = enabled ? 'Salir de pantalla completa' : 'Pantalla completa';
+        if (!enabled && document.body.classList.contains('cinema-mode')) setStage(false);
+    }
+    document.addEventListener('fullscreenchange', syncFullscreen); document.addEventListener('webkitfullscreenchange', syncFullscreen);
+    const hostDialog = document.getElementById('hostDialog');
+    function openHost() { hostDialog.showModal(); (isHost ? document.getElementById('chacalMode') : document.getElementById('hostKey')).focus(); }
+    document.getElementById('welcomeHostBtn').onclick = () => { iniciarKaraoke(); openHost(); };
+    document.getElementById('hostOpenBtn').onclick = openHost;
+    document.getElementById('closeHostBtn').onclick = () => hostDialog.close();
+    document.getElementById('lockHostBtn').onclick = () => { hostKey = ''; socket.emit('authenticate-host', {key: ''}); setHostAccess(false); hostDialog.close(); };
 
-    document.getElementById('cinemaBtn').onclick = () => {
-        const body = document.body;
-        if (!body.classList.contains('cinema-mode')) {
-            body.classList.add('cinema-mode');
-            document.documentElement.requestFullscreen?.() || document.documentElement.webkitRequestFullscreen?.();
-            document.getElementById('cinemaBtn').innerHTML = "🚪 Salir Modo Cine";
-            moveToCinemaMode();
-        } else {
-            body.classList.remove('cinema-mode');
-            document.exitFullscreen?.() || document.webkitExitFullscreen?.();
-            document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine";
-            restoreFromCinemaMode();
-        }
-    };
-    document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && !document.webkitFullscreenElement) { document.body.classList.remove('cinema-mode'); document.getElementById('cinemaBtn').innerHTML = "🎬 Modo Cine"; restoreFromCinemaMode(); } });
-    
     socket.emit('get-state');
 
-    // Sonidos automáticos durante reproducción
-    function reproducirEfecto(nombreArchivo) {
-        const audio = new Audio(`/assets/sounds/${nombreArchivo}`);
-        audio.play().catch(e => console.log("Error audio efecto:", e));
+    // Reuse one audio context and gate all effects independently from music / phone audio.
+    let effectsVolume = 0.35, lastAudioEffect = 0, effectsContext = null, effectsAudio = null;
+    let chacalMode = 'fiesta', chacalResumeTimer = null, chacalPausedSong = null, chacalWasPlaying = false;
+    function prepareEffectsAudio() {
+        try { if (!effectsContext) effectsContext = new (window.AudioContext || window.webkitAudioContext)(); void effectsContext.resume(); } catch (_) {}
+    }
+    function canPlayEffect() {
+        if (!window.showStarted || effectsVolume <= 0 || Date.now() - lastAudioEffect < 6000) return false;
+        lastAudioEffect = Date.now(); return true;
+    }
+    function reproducirEfecto(nombreArchivo, maxDuration = 3500) {
+        if (!canPlayEffect()) return;
+        if (effectsAudio) effectsAudio.pause();
+        const audio = new Audio(`/assets/sounds/${nombreArchivo}`); effectsAudio = audio; audio.volume = effectsVolume;
+        audio.play().catch(() => {});
+        setTimeout(() => { audio.pause(); if (effectsAudio === audio) effectsAudio = null; }, maxDuration);
+    }
+    function playBoo() {
+        if (!canPlayEffect()) return;
+        try { const voice = new SpeechSynthesisUtterance('Buuu'); voice.lang = 'es'; voice.pitch = 0.4; voice.rate = 0.7; voice.volume = effectsVolume; window.speechSynthesis.speak(voice); } catch (_) {}
+    }
+    function saveChacalOptions() {
+        if (!isHost) return;
+        socket.timeout(5000).emit('set-chacal-options', {mode: document.getElementById('chacalMode').value, allowBoo: document.getElementById('allowBoo').checked}, (error, result) => {
+            document.getElementById('hostStatus').textContent = error ? 'No se confirmó el cambio. Revisa la conexión.' : result?.message || 'Sin respuesta';
+        });
+    }
+    document.getElementById('chacalMode').onchange = saveChacalOptions;
+    document.getElementById('allowBoo').onchange = saveChacalOptions;
+    document.getElementById('effectsVolume').oninput = event => {
+        effectsVolume = Number(event.target.value) / 100;
+        document.getElementById('effectsVolumeValue').textContent = `${event.target.value} %`;
+        if (effectsAudio) effectsAudio.volume = effectsVolume;
+        if (effectsVolume === 0) effectsAudio?.pause();
+    };
+    document.querySelectorAll('[data-host-sound]').forEach(button => { button.onclick = () => {
+        if (!isHost) return;
+        if (button.dataset.hostSound === 'abucheo' && !document.getElementById('allowBoo').checked) { document.getElementById('hostStatus').textContent = 'Activa Permitir abucheo breve primero.'; return; }
+        socket.emit('trigger-effect', button.dataset.hostSound);
+    }; });
+    function cancelChacalPause(resume) {
+        clearTimeout(chacalResumeTimer);
+        if (resume && chacalWasPlaying && chacalPausedSong === lastSongId) ytPlayer?.playVideo?.();
+        chacalPausedSong = null; chacalWasPlaying = false;
+        document.body.style.animation = '';
+        const widget = document.getElementById('chacalWidget'); if (widget) widget.style.display = 'none';
     }
 
     // Función para mostrar el cartel de próximo cantante con pulso (solo en modo cine)
@@ -1109,19 +627,11 @@
             const currentTime = ytPlayer.getCurrentTime();
             const duration = ytPlayer.getDuration();
             
-            // Sonidos existentes (ovación, aplausos, multitud)
-            if (state === 1 && currentTime > 0 && currentTime < 2 && !window.hasStarted) {
-                reproducirEfecto('ovacion.mp3');
-                window.hasStarted = true;
-            }
+            // Brief end-of-song applause; no random crowd audio over singing.
             if (state === 1 && duration && (duration - currentTime) < 3 && !window.hasEnded) {
                 reproducirEfecto('aplausos.wav');
                 window.hasEnded = true;
             }
-            if (state === 1 && currentTime > 10 && duration && (duration - currentTime) > 5) {
-                if (Math.random() < 0.003) reproducirEfecto('multitud.wav');
-            }
-            
             // Mostrar cartel de próximo cantante en los últimos 5 segundos (solo en modo cine)
             if (state === 1 && duration && (duration - currentTime) <= 5 && (duration - currentTime) > 0) {
                 showCinemaNextCardWithPulse();
@@ -1154,6 +664,7 @@
         const reactionMsgSpan = document.getElementById('reactionMsg');
         
         if (rgbLayer) rgbLayer.style.height = percent + '%';
+        document.getElementById('slimMeter').setAttribute('aria-valuenow', String(Math.floor(percent)));
         if (percentDisplay) percentDisplay.innerText = Math.floor(percent) + '%';
         
         if (percent >= 50) {
@@ -1163,7 +674,7 @@
         }
         
         let emoji = "", msg = "";
-        if (percent < 15) { emoji = "😶🔇"; msg = "¡Silencio total! Anima al cantante 🙌"; }
+        if (percent < 15) { emoji = "👏"; msg = "Anima al cantante con tus reacciones."; }
         else if (percent < 35) { emoji = "👏🎤✨"; msg = "Pequeños aplausos... ¡más energía!"; }
         else if (percent < 55) { emoji = "🔥👏🎸"; msg = "¡El público comienza a vibrar!"; }
         else if (percent < 75) { emoji = "🤘💥⚡"; msg = "¡ESTALLIDO! Sigue así 🎉🔥"; }
@@ -1186,7 +697,7 @@
     });
 
     socket.on('chacal-voted', ({ voter }) => { showChacalDisapproval(voter); });
-    socket.on('chacal-overwhelming', () => { showChacalOverwhelming(); });
+    socket.on('chacal-overwhelming', ({songId}) => { if (chacalMode === 'competencia' && songId === lastSongId) showChacalOverwhelming(); });
 
     function showChacalDisapproval(voterName) {
         if (isChacalFanActive) return;
@@ -1199,7 +710,7 @@
         widget.style.bottom = '20px';
         widget.style.right = 'auto';
         widget.style.transform = 'scale(1)';
-        text.innerHTML = `⚠️ ¡${escapeHtml(voterName)} desafina! 🪈`;
+        text.textContent = '¡El público llamó al Chacal!';
         playSyntheticZampogna();
         let count = 0;
         const interval = setInterval(() => {
@@ -1215,24 +726,22 @@
     }
 
     function showChacalOverwhelming() {
+        cancelChacalPause(false);
+        chacalPausedSong = lastSongId; chacalWasPlaying = ytPlayer?.getPlayerState?.() === 1;
         const widget = document.getElementById('chacalWidget');
         const text = document.getElementById('chacalText');
         if (!widget || !text) return;
-        if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+        if (chacalWasPlaying) ytPlayer.pauseVideo();
         widget.style.display = 'block';
         widget.style.left = '50%';
         widget.style.bottom = '50%';
         widget.style.transform = 'translate(-50%, 50%) scale(2.2)';
         text.innerHTML = `🚨 ¡Y FUEEERA! 🚨`;
         playSyntheticZampogna();
-        setTimeout(playYFueraSound, 300);
+        // The zampoña is the signature sound; avoid stacking a second effect.
         document.body.style.animation = 'shake 0.5s infinite';
         clearTimeout(chacalTimeout);
-        chacalTimeout = setTimeout(() => {
-            widget.style.display = 'none';
-            document.body.style.animation = 'none';
-            if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
-        }, 5000);
+        chacalResumeTimer = setTimeout(() => cancelChacalPause(true), 5000);
     }
 
     function showChacalFan() {
@@ -1261,56 +770,24 @@
     }
 
     function playSyntheticZampogna() {
+        if (!canPlayEffect()) return;
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(330, ctx.currentTime);
-            osc.frequency.linearRampToValueAtTime(261, ctx.currentTime + 1.2);
-            gain.gain.setValueAtTime(0, ctx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.15);
-            gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.8);
-            gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.value = 800;
-            osc.connect(filter);
-            filter.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 1.2);
-        } catch (e) {}
+            prepareEffectsAudio(); const ctx = effectsContext; if (!ctx) return;
+            const osc = ctx.createOscillator(), gain = ctx.createGain(), filter = ctx.createBiquadFilter();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(330, ctx.currentTime); osc.frequency.linearRampToValueAtTime(261, ctx.currentTime + 1.2);
+            gain.gain.setValueAtTime(0, ctx.currentTime); gain.gain.linearRampToValueAtTime(effectsVolume * 0.5, ctx.currentTime + 0.15); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
+            filter.type = 'lowpass'; filter.frequency.value = 800; osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+            osc.onended = () => { osc.disconnect(); filter.disconnect(); gain.disconnect(); }; osc.start(); osc.stop(ctx.currentTime + 1.2);
+        } catch (_) {}
     }
-
-    function playYFueraSound() {
-        const audio = new Audio('/assets/sounds/trompeta_chacal.mpeg');
-        audio.play().catch(() => {
-            try {
-                const utterance = new SpeechSynthesisUtterance("¡Y fuera! ¡Y fuera! ¡Y fuera!");
-                utterance.rate = 1.25;
-                utterance.pitch = 0.6;
-                window.speechSynthesis.speak(utterance);
-            } catch(e) {}
-        });
-    }
-
     function playBellSound() {
+        if (!canPlayEffect()) return;
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.15);
-            osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.4);
-            gain.gain.setValueAtTime(0.2, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.5);
-        } catch (e) {}
+            prepareEffectsAudio(); const ctx = effectsContext; if (!ctx) return;
+            const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.type = 'sine'; osc.frequency.value = 880;
+            gain.gain.setValueAtTime(effectsVolume * 0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            osc.connect(gain); gain.connect(ctx.destination); osc.onended = () => { osc.disconnect(); gain.disconnect(); }; osc.start(); osc.stop(ctx.currentTime + 0.5);
+        } catch (_) {}
     }
 
     // ---------- MODO DE JUEGO: BOTÓN FLOTANTE Y LISTENER ADICIONAL ----------

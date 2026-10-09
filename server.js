@@ -85,6 +85,7 @@ let currentSongVotesChacal = new Set();
 let activeVoiceEffect = 'normal';
 let voiceEffectTimeout = null;
 let gameMode = 'teams';
+let chacalMode = 'fiesta', allowBoo = false, lastChacalAt = 0, lastSoundAt = 0;
 
 let decayTimeout = null;
 let decayInterval = null;
@@ -128,7 +129,7 @@ function emitFullState(target = io) {
     target.emit('state-update', { queue, currentSong, teamScores, participantList,
         coSingerIds: [...coSingerIds], peakApplause, currentSongClaps, activeVoiceEffect,
         chacalVoteCount: currentSongVotesChacal.size,
-        chacalVoteRatio: participants.size > 0 ? currentSongVotesChacal.size / participants.size : 0, gameMode });
+        chacalVoteRatio: participants.size > 0 ? currentSongVotesChacal.size / participants.size : 0, gameMode, chacalMode, allowBoo });
     target.emit('individual-ranking', getIndividualRanking());
 }
 
@@ -137,7 +138,7 @@ function nextSong() {
     if (currentSong) { history.push(currentSong); if (history.length > 20) history.shift(); }
     currentSong = queue.length > 0 ? queue.shift() : null;
     currentSongClaps = 0;
-    currentSongVotesChacal.clear();
+    currentSongVotesChacal.clear(); lastChacalAt = 0;
     peakApplause = 0;
     activeVoiceEffect = 'normal';
     clearTimeout(voiceEffectTimeout);
@@ -224,17 +225,31 @@ io.on('connection', (socket) => {
         resetDecay();
     });
 
-    socket.on('vote-chacal', () => {
-        if (!currentSong || !socket.data.participantId) return;
+    socket.on('set-chacal-options', (payload = {}, ack) => {
+        if (!isHost(socket)) { if (typeof ack === 'function') ack({ok: false, message: 'Requiere acceso de anfitrión.'}); return; }
+        if (!['fiesta', 'competencia'].includes(payload?.mode) || typeof payload?.allowBoo !== 'boolean') { if (typeof ack === 'function') ack({ok: false, message: 'Opciones no válidas.'}); return; }
+        chacalMode = payload.mode; allowBoo = payload.allowBoo;
+        currentSongVotesChacal.clear(); lastChacalAt = 0; emitFullState();
+        if (typeof ack === 'function') ack({ok: true, message: 'Reacciones actualizadas.'});
+    });
+    socket.on('vote-chacal', (ack) => {
+        const reply = message => { if (typeof ack === 'function') ack({message}); };
+        if (!currentSong || !socket.data.participantId) return reply('Añade una canción para llamar al Chacal.');
+        if (chacalMode === 'competencia' && Date.now() - lastChacalAt < 6000) return reply('Espera unos segundos antes de una nueva ronda del Chacal.');
+        if (currentSongVotesChacal.has(socket.data.participantId)) return reply('Ya llamaste al Chacal en esta ronda.');
         currentSongVotesChacal.add(socket.data.participantId);
         const voteCount = currentSongVotesChacal.size;
         const voteRatio = participants.size > 0 ? voteCount / participants.size : 0;
         const sender = participants.get(socket.id) || 'Alguien';
-        io.emit('chacal-voted', { voter: sender, voteCount, voteRatio });
-        if (voteRatio >= 0.5) {
-            io.emit('chacal-overwhelming', { voteCount, totalParticipants: participants.size });
+        const now = Date.now();
+        if (chacalMode === 'competencia' && voteRatio >= 0.5 && now - lastChacalAt >= 6000) {
+            lastChacalAt = now;
+            io.emit('chacal-overwhelming', { voteCount, totalParticipants: participants.size, songId: currentSong.id });
             currentSongVotesChacal.clear();
+        } else if (chacalMode === 'fiesta' && now - lastChacalAt >= 6000) {
+            lastChacalAt = now; io.emit('chacal-voted', { voter: sender, voteCount, voteRatio });
         }
+        reply(chacalMode === 'fiesta' ? 'El Chacal recibió tu llamada. Las reacciones suenan con una pausa entre ellas.' : 'Voto del Chacal recibido.');
     });
 
     socket.on('trigger-voice-effect', (effectName) => {
@@ -270,7 +285,12 @@ io.on('connection', (socket) => {
     });
 
     socket.on('trigger-effect', (effectName) => {
-        if (!socket.data.participantId || typeof effectName !== 'string' || effectName.length > 30) return;
+        if ((!socket.data.participantId && !socket.data.isHost) || typeof effectName !== 'string' || effectName.length > 30) return;
+        if (['ovacion', 'aplausos', 'abucheo', 'multitud'].includes(effectName)) {
+            if (effectName === 'abucheo' && !allowBoo) return;
+            if (Date.now() - lastSoundAt < 6000) return;
+            lastSoundAt = Date.now();
+        }
         const sender = participants.get(socket.id);
         if (currentSong && currentSong.requester) {
             scoreSinger(1);

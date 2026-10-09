@@ -80,3 +80,24 @@ test('metadata outages do not prevent valid video links from entering the queue'
         assert.ok([snapshot.currentSong, ...snapshot.queue].some(song => song.title === 'Video de YouTube (abcdefghijk)'));
     } finally { axios.get = previous; }
 });
+
+test('host controls Chacal modes; Fiesta never pauses and Competition emits a song-bound interruption', async () => {
+    const host = await connect(), singer = await connect(); await join(singer);
+    await ack(host, 'authenticate-host', {key: process.env.HOST_KEY});
+    assert.equal((await ack(singer, 'set-chacal-options', {mode:'competencia', allowBoo:true})).ok, false);
+    await ack(host, 'set-chacal-options', {mode:'fiesta', allowBoo:false});
+    const pauses = []; host.on('chacal-overwhelming', data => pauses.push(data));
+    const vote = socket => new Promise((resolve, reject) => socket.timeout(2000).emit('vote-chacal', (error, response) => error ? reject(error) : resolve(response)));
+    const participants = (await state(host)).participantList;
+    const voters = participants.map(person => clients.find(socket => socket.id === person.socketId));
+    for (const voter of voters) await vote(voter);
+    assert.equal(pauses.length, 0);
+    const before = await state(host);
+    await ack(host, 'set-chacal-options', {mode:'competencia', allowBoo:true});
+    for (const voter of voters) await vote(voter);
+    await state(host);
+    assert.equal(pauses.length, 1);
+    assert.equal(pauses[0].songId, before.currentSong.id);
+    const config = await state(host); assert.equal(config.chacalMode, 'competencia'); assert.equal(config.allowBoo, true);
+    await ack(host, 'set-chacal-options', {mode:'fiesta', allowBoo:false});
+});
