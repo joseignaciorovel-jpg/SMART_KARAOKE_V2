@@ -4,15 +4,16 @@ const socketIo = require('socket.io');
 const path = require('path');
 const QRCode = require('qrcode');
 const axios = require('axios');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, { cors: { origin: "*" } });
+const io = socketIo(server);
 
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+app.use(express.json({ limit: "16kb" }));
 
 const GIPHY_API_KEY = process.env.GIPHY_KEY || 'GlVGYHqc3SyXX10B0BwKz1TFyaMc11JB';
 
@@ -54,7 +55,29 @@ let history = [];
 let currentSong = null;
 let participants = new Map();
 let participantTeams = new Map();
-let singerScores = {};
+let singerScores = Object.create(null);
+const sessions = new Map();
+const pendingInvitations = new Map();
+let coSingerIds = new Set();
+const HOST_KEY = process.env.HOST_KEY || '';
+function validHostKey(key) {
+    if (!HOST_KEY || typeof key !== 'string') return false;
+    const supplied = Buffer.from(key), expected = Buffer.from(HOST_KEY);
+    return supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+}
+function isHost(socket) {
+    if (socket.data.isHost) return true;
+    socket.emit('error-msg', 'Esta acción requiere acceso de anfitrión.'); return false;
+}
+function canSing(socket) {
+    return Boolean(currentSong && socket.data.participantId &&
+        (currentSong.requesterId === socket.data.participantId || coSingerIds.has(socket.data.participantId)));
+}
+function scoreSinger(points) {
+    if (!currentSong) return;
+    const id = currentSong.requesterId;
+    singerScores[id] = (singerScores[id] || 0) + points;
+}
 let teamScores = { red: 0, blue: 0 };
 let currentSongClaps = 0;
 let peakApplause = 0;
@@ -94,16 +117,23 @@ function resetDecay() {
 }
 
 function getIndividualRanking() {
-    return Object.entries(singerScores).map(([name, score]) => ({ name, score })).sort((a,b) => b.score - a.score);
+    return Object.entries(singerScores).map(([id, score]) => ({ id, name: Array.from(sessions.values()).find(session => session.id === id)?.nickname || 'Cantante', score })).sort((a,b) => b.score - a.score);
 }
 
-function emitFullState() {
-    const participantList = Array.from(participants.entries()).map(([id, name]) => ({ id, name, team: participantTeams.get(id) || null }));
-    io.emit('state-update', { queue, currentSong, teamScores, participantList, peakApplause, currentSongClaps, activeVoiceEffect, chacalVoteCount: currentSongVotesChacal.size, chacalVoteRatio: participants.size > 0 ? (currentSongVotesChacal.size / participants.size) : 0, gameMode });
-    io.emit('individual-ranking', getIndividualRanking());
+function emitFullState(target = io) {
+    const participantList = Array.from(participants.entries()).map(([socketId, name]) => ({
+        id: io.sockets.sockets.get(socketId)?.data.participantId, socketId, name,
+        team: participantTeams.get(socketId) || null
+    }));
+    target.emit('state-update', { queue, currentSong, teamScores, participantList,
+        coSingerIds: [...coSingerIds], peakApplause, currentSongClaps, activeVoiceEffect,
+        chacalVoteCount: currentSongVotesChacal.size,
+        chacalVoteRatio: participants.size > 0 ? currentSongVotesChacal.size / participants.size : 0, gameMode });
+    target.emit('individual-ranking', getIndividualRanking());
 }
 
 function nextSong() {
+    coSingerIds.clear(); pendingInvitations.clear();
     if (currentSong) { history.push(currentSong); if (history.length > 20) history.shift(); }
     currentSong = queue.length > 0 ? queue.shift() : null;
     currentSongClaps = 0;
@@ -115,12 +145,13 @@ function nextSong() {
     emitFullState();
 }
 
-async function addSong(videoUrl, requester) {
+async function addSong(videoUrl, requester, requesterId) {
+    if (typeof videoUrl !== "string" || videoUrl.length > 2048) return null;
     const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?#]+)/)?.[1];
     if (!videoId) return null;
     try {
-        const meta = (await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)).data;
-        const newSong = { id: Date.now().toString(), videoId, title: meta.title, thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, requester };
+        const meta = (await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}&format=json`, { timeout: 8000 })).data;
+        const newSong = { id: crypto.randomUUID(), requesterId, videoId, title: meta.title, thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, requester };
         queue.push(newSong);
         if (!currentSong) nextSong();
         else emitFullState();
@@ -131,25 +162,46 @@ async function addSong(videoUrl, requester) {
 io.on('connection', (socket) => {
     console.log('Cliente conectado:', socket.id);
 
-    socket.on('join-team', ({ nickname, team }) => {
-        if (nickname && (team === 'red' || team === 'blue')) {
-            const cleanNick = nickname.trim();
-            participants.set(socket.id, cleanNick);
-            participantTeams.set(socket.id, team);
-            if (singerScores[cleanNick] === undefined) singerScores[cleanNick] = 0;
-            socket.emit('nickname-set', { nickname: cleanNick, team });
-            io.emit('notification', `${cleanNick} se unió al equipo ${team === 'red' ? 'Rojo 🔴' : 'Azul 🔵'}`);
-            emitFullState();
+    socket.on('get-state', () => emitFullState(socket));
+    socket.on('authenticate-host', (payload = {}, ack) => {
+        socket.data.isHost = validHostKey(payload?.key);
+        if (typeof ack === 'function') ack({ ok: socket.data.isHost,
+            message: HOST_KEY ? 'Clave incorrecta.' : 'Configura HOST_KEY en el servidor para habilitar los controles.' });
+    });
+    socket.on('join-team', (payload = {}) => {
+        if (!payload || typeof payload !== 'object') return;
+        const { nickname, team, sessionToken } = payload;
+        if (typeof nickname !== 'string' || !nickname.trim() || !['red', 'blue'].includes(team)) return;
+        let session = typeof sessionToken === 'string' ? sessions.get(sessionToken) : null;
+        const resumed = Boolean(session);
+        if (!session) {
+            session = { id: crypto.randomUUID(), token: crypto.randomBytes(32).toString('hex'), nickname: nickname.trim().slice(0, 40), team };
+            sessions.set(session.token, session);
         }
+        // A session owns one connection. Refresh/reconnect replaces the previous socket.
+        if (session.socketId && session.socketId !== socket.id) {
+            io.sockets.sockets.get(session.socketId)?.disconnect(true);
+        }
+        session.socketId = socket.id;
+        socket.data.participantId = session.id;
+        participants.set(socket.id, session.nickname);
+        participantTeams.set(socket.id, session.team);
+        if (singerScores[session.id] === undefined) singerScores[session.id] = 0;
+        socket.emit('nickname-set', { nickname: session.nickname, team: session.team,
+            participantId: session.id, sessionToken: session.token });
+        if (!resumed) io.emit('notification', `${session.nickname} se unió al equipo ${session.team === 'red' ? 'Rojo 🔴' : 'Azul 🔵'}`);
+        emitFullState();
     });
 
-    socket.on('submit-claps', ({ claps, screams }) => {
-        const total = (claps || 0) + (screams || 0);
+    socket.on('submit-claps', (payload = {}) => {
+        if (!socket.data.participantId || !payload || typeof payload !== 'object') return;
+        const { claps, screams } = payload;
+        const total = [claps, screams].reduce((sum, n) => sum + (Number.isFinite(n) && n > 0 ? Math.min(1, n) : 0), 0);
         if (total <= 0) return;
         currentSongClaps = Math.min(100, currentSongClaps + total);
         if (currentSongClaps > peakApplause) peakApplause = currentSongClaps;
         if (currentSong) {
-            singerScores[currentSong.requester] = (singerScores[currentSong.requester] || 0) + total;
+            scoreSinger(total);
             io.emit('individual-ranking', getIndividualRanking());
         }
         if (gameMode === 'teams') {
@@ -161,8 +213,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('vote-chacal', () => {
-        if (!currentSong) return;
-        currentSongVotesChacal.add(socket.id);
+        if (!currentSong || !socket.data.participantId) return;
+        currentSongVotesChacal.add(socket.data.participantId);
         const voteCount = currentSongVotesChacal.size;
         const voteRatio = participants.size > 0 ? voteCount / participants.size : 0;
         const sender = participants.get(socket.id) || 'Alguien';
@@ -174,7 +226,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('trigger-voice-effect', (effectName) => {
-        if (['normal', 'reverb', 'helium', 'monster'].includes(effectName)) {
+        if (canSing(socket) && ['normal', 'reverb'].includes(effectName)) {
             activeVoiceEffect = effectName;
             const sender = participants.get(socket.id) || 'Alguien';
             io.emit('voice-effect-changed', { effect: effectName, by: sender });
@@ -192,24 +244,34 @@ io.on('connection', (socket) => {
         io.emit('show-final-ranking', { individual: getIndividualRanking(), team: gameMode === 'teams' ? teamScores : null });
     });
 
-    socket.on('add-song', async ({ url, nickname }) => {
-        const song = await addSong(url, nickname);
+    socket.on('add-song', async (payload = {}, ack) => {
+        const url = payload?.url;
+        if (!socket.data.participantId && !socket.data.isHost) {
+            if (typeof ack === 'function') ack({ ok: false, message: 'Vuelve a entrar a la sesión antes de añadir una canción.' });
+            return;
+        }
+        const nickname = participants.get(socket.id) || 'Anfitrión';
+        const song = await addSong(url, nickname, socket.data.participantId || 'host');
+        if (typeof ack === 'function') ack({ ok: Boolean(song), message: song ? 'Canción añadida.' : 'No se pudo añadir el enlace. Comprueba que el video esté disponible.' });
         if (song) io.emit('notification', `${nickname} añadió: ${song.title}`);
         else socket.emit('error-msg', 'Enlace no válido');
     });
 
     socket.on('trigger-effect', (effectName) => {
+        if (!socket.data.participantId || typeof effectName !== 'string' || effectName.length > 30) return;
         const sender = participants.get(socket.id);
         if (currentSong && currentSong.requester) {
-            singerScores[currentSong.requester] = (singerScores[currentSong.requester] || 0) + 1;
+            scoreSinger(1);
             io.emit('individual-ranking', getIndividualRanking());
         }
         io.emit('effect-triggered', { effect: effectName, from: sender || 'Alguien' });
     });
 
     socket.on('send-sticker', (stickerUrl) => {
+        if (!socket.data.participantId || typeof stickerUrl !== 'string' || stickerUrl.length > 2048) return;
+        try { if (new URL(stickerUrl).protocol !== 'https:') return; } catch (_) { return; }
         if (currentSong && currentSong.requester) {
-            singerScores[currentSong.requester] = (singerScores[currentSong.requester] || 0) + 2;
+            scoreSinger(2);
             io.emit('individual-ranking', getIndividualRanking());
         }
         io.emit('sticker-received', stickerUrl);
@@ -220,22 +282,29 @@ io.on('connection', (socket) => {
         socket.emit('participants-list', list);
     });
 
-    socket.on('invite-participant', ({ targetSocketId }) => {
-        const inviterName = participants.get(socket.id);
-        io.to(targetSocketId).emit('receive-invitation', { fromId: socket.id, fromName: inviterName });
+    socket.on('invite-participant', (payload = {}) => {
+        const targetSocketId = payload?.targetSocketId;
+        if (!canSing(socket) || !participants.has(targetSocketId) || targetSocketId === socket.id) return;
+        pendingInvitations.set(targetSocketId, { fromId: socket.id, songId: currentSong.id, expires: Date.now() + 60000 });
+        io.to(targetSocketId).emit('receive-invitation', { fromId: socket.id, fromName: participants.get(socket.id) });
     });
-
     socket.on('accept-invitation', (inviterId) => {
-        io.to(inviterId).emit('invitation-accepted', socket.id);
+        const invitation = pendingInvitations.get(socket.id);
+        pendingInvitations.delete(socket.id);
+        if (!invitation || invitation.fromId !== inviterId || invitation.songId !== currentSong?.id || invitation.expires < Date.now()) return;
+        const inviter = io.sockets.sockets.get(inviterId);
+        if (!inviter || !canSing(inviter) || !socket.data.participantId) return;
+        coSingerIds.add(socket.data.participantId);
+        socket.emit('invitation-accepted', { songId: currentSong.id });
+        inviter.emit('invitation-accepted', { songId: currentSong.id });
+        emitFullState();
     });
-
-    socket.on('mic-audio', (audioData) => {
-        socket.broadcast.emit('mic-audio', audioData);
-    });
-
-    socket.on('skip-song', nextSong);
+    // Voice stays on the phone. Remote audio is intentionally disabled until a WebRTC mode exists.
+    socket.on('skip-song', () => { if (isHost(socket)) nextSong(); });
     socket.on('prev-song', () => {
+        if (!isHost(socket)) return;
         if (history.length > 0) {
+            coSingerIds.clear(); pendingInvitations.clear();
             if (currentSong) queue.unshift(currentSong);
             currentSong = history.pop();
             emitFullState();
@@ -243,14 +312,15 @@ io.on('connection', (socket) => {
         }
     });
     socket.on('remove-song', (songId) => {
+        if (!isHost(socket)) return;
         queue = queue.filter(s => s.id !== songId);
         emitFullState();
     });
     socket.on('clear-queue', () => {
+        if (!isHost(socket)) return;
         queue = [];
-        singerScores = {};
+        singerScores = Object.create(null);
         teamScores = { red: 0, blue: 0 };
-        participantTeams.clear();
         currentSongClaps = 0;
         currentSongVotesChacal.clear();
         peakApplause = 0;
@@ -267,23 +337,22 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+        pendingInvitations.delete(socket.id);
+        currentSongVotesChacal.delete(socket.data.participantId);
         participants.delete(socket.id);
         participantTeams.delete(socket.id);
         emitFullState();
     });
 });
 
-app.post('/api/set-mode', (req, res) => {
-    const { mode, key } = req.body;
-    if (key !== 'admin123') return res.status(403).json({ error: 'Clave inválida' });
-    if (mode === 'arcade' || mode === 'teams') {
-        gameMode = mode;
-        io.emit('game-mode-changed', gameMode);
-        emitFullState();
-        res.json({ ok: true, mode });
-    } else {
-        res.status(400).json({ error: 'Modo no válido' });
-    }
+io.on('connection', socket => {
+    socket.on('set-mode', (payload = {}) => {
+        const mode = payload?.mode;
+        if (!isHost(socket)) return;
+        if (mode === 'arcade' || mode === 'teams') {
+            gameMode = mode; io.emit('game-mode-changed', gameMode); emitFullState();
+        }
+    });
 });
 
 app.get('/config', async (req, res) => {
@@ -299,7 +368,9 @@ app.get('/config', async (req, res) => {
     }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+if (require.main === module) server.listen(PORT, '0.0.0.0', () => {
     console.log(`🎤 Servidor Karaoke listo en: http://localhost:${PORT}`);
     console.log(`📱 Invitados: Acceso dinámico escaneando el código QR en la TV`);
 });
+
+module.exports = { server, io, stopTimers: () => { stopDecay(); clearTimeout(voiceEffectTimeout); } };
