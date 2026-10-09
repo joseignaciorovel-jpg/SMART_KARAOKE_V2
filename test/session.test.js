@@ -57,3 +57,13 @@ test('anonymous clients cannot impersonate a singer when adding a song', async (
     const result = await ack(anonymous, 'add-song', { url: 'https://youtu.be/abcdefghijk', nickname: 'Inventado' });
     assert.equal(result.ok, false);
 });
+
+test('YouTube URL parsing handles mobile shares, parameter order and rejects lookalike hosts', async () => {
+    const singer = await connect(); await join(singer);
+    for (const url of ['https://m.youtube.com/watch?si=share&v=abcdefghijk', 'https://youtube.com/shorts/abcdefghijk', 'youtu.be/abcdefghijk?si=share']) {
+        assert.equal((await ack(singer, 'add-song', { url })).ok, true);
+    }
+    for (const url of ['https://fake-youtube.com/watch?v=abcdefghijk', 'https://youtube.com/watch?v=bad', 'https://example.com/youtu.be/abcdefghijk']) {
+        assert.equal((await ack(singer, 'add-song', { url })).ok, false);
+    }
+});

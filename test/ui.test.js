@@ -82,3 +82,29 @@ test('screen host login enables labeled controls and hides queue actions again o
         socket.disconnect(); assert.equal($('hostControls').hidden, true);
     } finally { dom.window.close(); }
 });
+
+test('song submission accepts shared links without scheme and always gives inline feedback', () => {
+    const h = mobile();
+    try {
+        h.socket.fire('nickname-set', { nickname: 'Cony', team: 'red', participantId: 'p1', sessionToken: 'token' });
+        h.$('youtubeUrlInput').value = 'youtu.be/abcdefghijk?si=shared';
+        h.$('addSongBtn').click();
+        assert.equal(h.$('addSongBtn').textContent, 'Añadiendo…');
+        assert.equal(h.$('songFeedback').textContent, 'Enviando canción…');
+        const sent = h.socket.sent.find(item => item.event === 'add-song');
+        assert.equal(sent.payload.url, 'https://youtu.be/abcdefghijk?si=shared');
+        assert.equal(h.$('songForm').noValidate, true);
+    } finally { h.dom.window.close(); }
+});
+test('empty and non-YouTube song input display a message instead of silently blocking submission', () => {
+    const h = mobile();
+    try {
+        h.socket.fire('nickname-set', { nickname: 'Cony', team: 'red', participantId: 'p1', sessionToken: 'token' });
+        h.$('addSongBtn').click();
+        assert.match(h.$('songFeedback').textContent, /Pega un enlace/);
+        h.$('youtubeUrlInput').value = 'https://example.com/watch?v=abcdefghijk';
+        h.$('addSongBtn').click();
+        assert.match(h.$('songFeedback').textContent, /debe ser de YouTube/);
+        assert.ok(!h.socket.sent.some(item => item.event === 'add-song'));
+    } finally { h.dom.window.close(); }
+});

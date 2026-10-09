@@ -60,7 +60,8 @@
             </section>
             <section id="songs" class="tab-panel" hidden>
                 <article class="card"><p class="eyebrow">PREPARA TU MOMENTO</p><h2>Añade tu canción</h2>
-                    <form id="songForm"><label for="youtubeUrlInput">Enlace de YouTube</label><input id="youtubeUrlInput" type="url" placeholder="https://youtu.be/…" required><button id="addSongBtn" class="primary full">Añadir a la cola</button></form>
+                    <form id="songForm" novalidate><label for="youtubeUrlInput">Enlace de YouTube</label><input id="youtubeUrlInput" type="text" inputmode="url" autocomplete="off" placeholder="https://youtu.be/…" aria-describedby="songFeedback" required><button id="addSongBtn" type="submit" class="primary full">Añadir a la cola</button></form>
+                    <p id="songFeedback" role="status" aria-live="polite" class="note">Pega el enlace y pulsa Añadir a la cola.</p>
                     <p class="note">Comprueba que la versión incluya la letra o pista de karaoke.</p>
                 </article><article class="card"><h2>Próximos turnos</h2><ol id="songQueue" class="song-list"><li>La cola está vacía.</li></ol></article>
             </section>

@@ -127,14 +127,24 @@
         if (socket.connected) socket.emit('trigger-effect', button.dataset.effect);
     }; });
     $('rankingBtn').onclick = () => socket.emit('request-final-ranking');
+    function songFeedback(message) { $('songFeedback').textContent = message; }
     $('songForm').onsubmit = e => {
         e.preventDefault(); if (submitting) return;
-        if (!socket.connected || !joined) return notify('Conéctate antes de añadir una canción.');
+        if (!socket.connected || !joined) return songFeedback('Conéctate antes de añadir una canción.');
+        let url = $('youtubeUrlInput').value.trim();
+        if (!url) return songFeedback('Pega un enlace de YouTube antes de añadir la canción.');
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        try {
+            const parsed = new URL(url);
+            if (!['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be', 'www.youtu.be'].includes(parsed.hostname) || !['https:', 'http:'].includes(parsed.protocol)) throw new Error();
+        } catch (_) { return songFeedback('El enlace debe ser de YouTube. Usa Compartir → Copiar enlace en el video.'); }
+        songFeedback('Enviando canción…');
         submitting = true; $('addSongBtn').disabled = true; $('addSongBtn').textContent = 'Añadiendo…';
-        socket.timeout(12000).emit('add-song', { url: $('youtubeUrlInput').value.trim() }, (error, result) => {
+        socket.timeout(12000).emit('add-song', { url }, (error, result) => {
             submitting = false; $('addSongBtn').disabled = false; $('addSongBtn').textContent = 'Añadir a la cola';
-            if (error) return notify('No pudimos confirmar la solicitud. Revisa la cola antes de volver a enviarla.');
-            notify(result.message);
+            if (error) return songFeedback('No pudimos confirmar la solicitud. Revisa la cola antes de volver a enviarla.');
+            if (!result) return songFeedback('El servidor no confirmó la solicitud. Inténtalo otra vez.');
+            songFeedback(result.message);
             if (result.ok) $('youtubeUrlInput').value = '';
         });
     };

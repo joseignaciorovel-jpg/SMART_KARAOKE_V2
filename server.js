@@ -147,8 +147,16 @@ function nextSong() {
 
 async function addSong(videoUrl, requester, requesterId) {
     if (typeof videoUrl !== "string" || videoUrl.length > 2048) return null;
-    const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?#]+)/)?.[1];
-    if (!videoId) return null;
+    let videoId;
+    try {
+        const url = new URL(/^https?:\/\//i.test(videoUrl.trim()) ? videoUrl.trim() : 'https://' + videoUrl.trim());
+        if (!['https:', 'http:'].includes(url.protocol)) return null;
+        if (['youtu.be', 'www.youtu.be'].includes(url.hostname)) videoId = url.pathname.split('/')[1];
+        else if (['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com'].includes(url.hostname)) {
+            videoId = url.pathname === '/watch' ? url.searchParams.get('v') : url.pathname.match(/^\/(?:shorts|live|embed)\/([^/]+)/)?.[1];
+        }
+    } catch (_) { return null; }
+    if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || '')) return null;
     try {
         const meta = (await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}&format=json`, { timeout: 8000 })).data;
         const newSong = { id: crypto.randomUUID(), requesterId, videoId, title: meta.title, thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, requester };
