@@ -49,6 +49,7 @@
         <div id="teamScoreboard" class="team-scoreboard" aria-label="Puntajes por equipo"><div class="red"><span>ROJO</span><strong id="scoreRed">0</strong></div><span class="versus">VS</span><div class="blue"><span>AZUL</span><strong id="scoreBlue">0</strong></div></div>
         <div class="header-actions"><span id="showConnection" class="live-badge" role="status">Conectando…</span><button id="fullscreenBtn" class="secondary" aria-label="Pantalla completa" aria-pressed="false">⛶ <span>Pantalla completa</span></button><button id="hostOpenBtn" class="secondary">Anfitrión</button></div>
     </header>
+    <p id="displayFeedback" class="display-feedback" role="status" hidden></p>
     <div class="tv-main-grid">
         <section class="performance" aria-label="Escenario">
             <div class="player-wrapper">
@@ -513,6 +514,7 @@
     // Two independent display controls: fullscreen preserves layout; stage focuses video.
     let immersiveTimer;
     async function toggleFullscreen() {
+        document.getElementById('displayFeedback').hidden = true;
         try {
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.());
@@ -521,7 +523,10 @@
                 if (!request) throw new Error();
                 await request.call(document.documentElement);
             }
-        } catch (_) { document.getElementById('showConnection').textContent = 'Pantalla completa no disponible en este navegador'; }
+        } catch (_) {
+            const feedback = document.getElementById('displayFeedback'); feedback.hidden = false;
+            feedback.textContent = 'Este navegador no permitió pantalla completa. En el computador puedes usar F11; el anfitrión también puede activar Modo escenario.';
+        }
     }
     function setStage(enabled) {
         document.body.classList.toggle('cinema-mode', enabled);

@@ -1,113 +1,259 @@
-        /* ---------- REACCIONES LATERALES ---------- */
-        @keyframes floatUp {
-            0% { opacity: 0; transform: translateY(100vh) scale(0.6) rotate(-10deg); }
-            15% { opacity: 1; }
-            85% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-20vh) scale(1.2) rotate(10deg); }
-        }
-        .floating-emoji, .floating-sticker {
-            position: fixed;
-            z-index: 99999;
-            pointer-events: none;
-            animation: floatUp 6s ease-out forwards;
-            filter: drop-shadow(0 0 12px rgba(0,0,0,0.6));
-            will-change: transform, opacity;
-        }
-        .floating-emoji {
-            font-size: 70px;
-            text-shadow: 0 0 15px rgba(255,255,200,0.8);
-        }
-        .floating-sticker {
-            max-width: 180px;
-            max-height: 180px;
-            border-radius: 20px;
-            background: rgba(0,0,0,0.2);
-            backdrop-filter: blur(4px);
-        }
+/* ---------- REACCIONES LATERALES ---------- */
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(100vh) scale(0.6) rotate(-10deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20vh) scale(1.2) rotate(10deg);
+  }
+}
+.floating-emoji,
+.floating-sticker {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  animation: floatUp 6s ease-out forwards;
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.6));
+  will-change: transform, opacity;
+}
+.floating-emoji {
+  font-size: 70px;
+  text-shadow: 0 0 15px rgba(255, 255, 200, 0.8);
+}
+.floating-sticker {
+  max-width: 180px;
+  max-height: 180px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+}
 
-        /* Transición de canción (presentador) */
-        #songTransitionOverlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.96);
-            display: none;
-            flex-direction: column; justify-content: center; align-items: center;
-            z-index: 20000;
-            text-align: center; padding: 20px;
-            backdrop-filter: blur(10px);
-        }
-        #songTransitionOverlay h2 {
-            font-size: 3rem; margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #ffd89b, #ff6a88);
-            -webkit-background-clip: text; color: transparent;
-        }
-        #songTransitionOverlay h1 {
-            font-size: 4.5rem; line-height: 1.1;
-            background: linear-gradient(135deg, #ffcc33, #ff66aa);
-            -webkit-background-clip: text; color: transparent;
-        }
-        #songTransitionOverlay p { font-size: 1.6rem; color: #ccc; margin-top: 1rem; }
-        
-        .effect-toast {
-            position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(8px);
-            color: white; padding: 12px 24px; border-radius: 40px; font-size: 1rem;
-            z-index: 99998; animation: fadeOut 3s forwards; pointer-events: none;
-            border-left: 5px solid #ffaa00;
-        }
-        @keyframes fadeOut {
-            0% { opacity: 1; transform: translateX(0); }
-            70% { opacity: 1; }
-            100% { opacity: 0; transform: translateX(30px); display: none; }
-        }
+/* Transición de canción (presentador) */
+#songTransitionOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.96);
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+  text-align: center;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+#songTransitionOverlay h2 {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #ffd89b, #ff6a88);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+#songTransitionOverlay h1 {
+  font-size: 4.5rem;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #ffcc33, #ff66aa);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+#songTransitionOverlay p {
+  font-size: 1.6rem;
+  color: #ccc;
+  margin-top: 1rem;
+}
 
-        /* ---------- RANKING DE LUJO (PODIO + GLASSMORPHISM) ---------- */
-        .ranking-podium {
-            display: flex; justify-content: center; align-items: flex-end;
-            gap: 30px; flex-wrap: wrap; margin: 40px 0;
-        }
-        .podium-card {
-            background: rgba(20, 20, 40, 0.65);
-            backdrop-filter: blur(15px); border-radius: 32px;
-            padding: 20px 25px; text-align: center; min-width: 180px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 20px 35px -15px rgba(0,0,0,0.5);
-        }
-        .podium-card:hover { transform: scale(1.03); background: rgba(40,40,70,0.8); }
-        .winner-card {
-            background: linear-gradient(135deg, #f9d423, #ff4e50);
-            color: #1e1a2f; transform: scale(1.05); border: 2px solid gold; box-shadow: 0 0 35px rgba(255,215,0,0.5);
-        }
-        .second-card { background: linear-gradient(135deg, #e0e0e0, #b0b0b0); color: #1e1a2f; }
-        .third-card { background: linear-gradient(135deg, #cd7f32, #a0522d); color: white; }
-        .podium-icon { font-size: 4rem; margin-bottom: 10px; }
-        .podium-name { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
-        .podium-score { font-size: 1.3rem; font-weight: bold; margin-top: 8px; }
-        .rest-list { width: 80%; max-width: 600px; margin-top: 30px; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); border-radius: 28px; padding: 15px 25px; }
-        .rest-item { display: flex; justify-content: space-between; font-size: 1.2rem; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2); }
-        
-        #finalRankingOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 30% 10%, #0f0c29, #24243e, #0a0a2a);
-            z-index: 30000; display: none; flex-direction: column; align-items: center;
-            justify-content: center; color: white; overflow-y: auto; padding: 40px 20px;
-        }
-        .close-ranking { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 10px 28px; border-radius: 60px; color: white; font-weight: bold; cursor: pointer; margin-top: 30px; transition: 0.2s; }
-        .close-ranking:hover { background: white; color: black; transform: scale(0.97); }
-        .restart-btn { background: white; color: #1a1a2e; border: none; padding: 12px 30px; border-radius: 60px; font-weight: bold; font-size: 1rem; margin-top: 20px; cursor: pointer; transition: 0.2s; }
-        .restart-btn:hover { transform: scale(1.02); background: #ffd966; }
+.effect-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 40px;
+  font-size: 1rem;
+  z-index: 99998;
+  animation: fadeOut 3s forwards;
+  pointer-events: none;
+  border-left: 5px solid #ffaa00;
+}
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(30px);
+    display: none;
+  }
+}
 
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(0px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(2px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(2px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
+/* ---------- RANKING DE LUJO (PODIO + GLASSMORPHISM) ---------- */
+.ranking-podium {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 30px;
+  flex-wrap: wrap;
+  margin: 40px 0;
+}
+.podium-card {
+  background: rgba(20, 20, 40, 0.65);
+  backdrop-filter: blur(15px);
+  border-radius: 32px;
+  padding: 20px 25px;
+  text-align: center;
+  min-width: 180px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 35px -15px rgba(0, 0, 0, 0.5);
+}
+.podium-card:hover {
+  transform: scale(1.03);
+  background: rgba(40, 40, 70, 0.8);
+}
+.winner-card {
+  background: linear-gradient(135deg, #f9d423, #ff4e50);
+  color: #1e1a2f;
+  transform: scale(1.05);
+  border: 2px solid gold;
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.5);
+}
+.second-card {
+  background: linear-gradient(135deg, #e0e0e0, #b0b0b0);
+  color: #1e1a2f;
+}
+.third-card {
+  background: linear-gradient(135deg, #cd7f32, #a0522d);
+  color: white;
+}
+.podium-icon {
+  font-size: 4rem;
+  margin-bottom: 10px;
+}
+.podium-name {
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.podium-score {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-top: 8px;
+}
+.rest-list {
+  width: 80%;
+  max-width: 600px;
+  margin-top: 30px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border-radius: 28px;
+  padding: 15px 25px;
+}
+.rest-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.2rem;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
 
+#finalRankingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 10%, #0f0c29, #24243e, #0a0a2a);
+  z-index: 30000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  overflow-y: auto;
+  padding: 40px 20px;
+}
+.close-ranking {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 28px;
+  border-radius: 60px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 30px;
+  transition: 0.2s;
+}
+.close-ranking:hover {
+  background: white;
+  color: black;
+  transform: scale(0.97);
+}
+.restart-btn {
+  background: white;
+  color: #1a1a2e;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 60px;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-top: 20px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.restart-btn:hover {
+  transform: scale(1.02);
+  background: #ffd966;
+}
+
+@keyframes shake {
+  0% {
+    transform: translate(1px, 1px) rotate(0deg);
+  }
+  10% {
+    transform: translate(-1px, -2px) rotate(-1deg);
+  }
+  20% {
+    transform: translate(-3px, 0px) rotate(1deg);
+  }
+  30% {
+    transform: translate(0px, 2px) rotate(0deg);
+  }
+  40% {
+    transform: translate(1px, -1px) rotate(1deg);
+  }
+  50% {
+    transform: translate(-1px, 2px) rotate(-1deg);
+  }
+  60% {
+    transform: translate(-3px, 1px) rotate(0deg);
+  }
+  70% {
+    transform: translate(2px, 1px) rotate(-1deg);
+  }
+  80% {
+    transform: translate(-1px, -1px) rotate(1deg);
+  }
+  90% {
+    transform: translate(2px, 2px) rotate(0deg);
+  }
+  100% {
+    transform: translate(1px, -2px) rotate(-1deg);
+  }
+}

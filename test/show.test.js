@@ -50,3 +50,22 @@ test('Chacal pauses only in Competition and cancels resume when the song changes
         await new Promise(resolve=>setImmediate(resolve));
     }finally{h.dom.window.close();}
 });
+
+test('fullscreen keeps the show layout and denial gives feedback without overwriting connection state', async()=>{
+    const h=screen();try{
+        await new Promise(resolve=>setImmediate(resolve));
+        h.socket.fire('connect');
+        await h.$('fullscreenBtn').onclick();
+        assert.equal(h.$('displayFeedback').hidden,false);
+        assert.match(h.$('displayFeedback').textContent,/F11/);
+        assert.equal(h.$('showConnection').textContent,'Show conectado');
+        let fullscreen=null;
+        Object.defineProperty(h.window.document,'fullscreenElement',{get:()=>fullscreen,configurable:true});
+        h.window.document.documentElement.requestFullscreen=async()=>{fullscreen=h.window.document.documentElement;h.window.document.dispatchEvent(new h.window.Event('fullscreenchange'));};
+        h.window.document.exitFullscreen=async()=>{fullscreen=null;h.window.document.dispatchEvent(new h.window.Event('fullscreenchange'));};
+        await h.$('fullscreenBtn').onclick();
+        assert.equal(h.$('fullscreenBtn').getAttribute('aria-pressed'),'true');
+        assert.equal(h.window.document.body.classList.contains('cinema-mode'),false);
+        await h.$('fullscreenBtn').onclick();assert.equal(h.$('fullscreenBtn').getAttribute('aria-pressed'),'false');
+    }finally{h.dom.window.close();}
+});
