@@ -34,6 +34,8 @@
     submitting = false,
     joinPending = false;
   let feedbackTimer;
+  let micClosing = false,
+    deferredMicDialog = null;
   let microphoneWanted = false,
     leaving = false;
   const micPreferences = { gain: 15, effect: "normal", keepAwake: true };
@@ -78,23 +80,35 @@
   });
   const audio = new LocalAudioEngine({
     onState({ state, message, muted }) {
-      $("micStatus").textContent = statusNames[state];
+      $("micStatus").textContent =
+        state === "output"
+          ? audio.effect === "reverb"
+            ? "Eco suave · salida activa"
+            : "Voz · salida activa"
+          : statusNames[state];
       $("micMessage").textContent = message;
+      $("micMessage").hidden = ["ready", "muted", "output"].includes(state);
       const active = ["ready", "muted", "output", "interrupted"].includes(
         state,
       );
-      $("audioControls").hidden = !active;
-      $("stopMicBtn").hidden = !active;
-      $("micBtn").hidden = active && state !== "interrupted";
-      $("micBtn").disabled = !joined && !microphoneWanted;
-      $("micBtn").textContent =
-        state === "requesting"
-          ? "Cancelar solicitud"
-          : state === "interrupted"
-            ? "Reanudar micrófono"
-            : "Activar micrófono";
-      $("outputSwitch").checked = !muted;
-      $("echoSwitch").checked = audio.effect === "reverb";
+      $("micMode").disabled = !active || state === "interrupted";
+      $("resumeMicBtn").hidden = !["interrupted", "error"].includes(state);
+      $("micBtn").disabled = micClosing || (!joined && !microphoneWanted);
+      $("micBtn").textContent = "Activar micrófono";
+      const position = muted ? 0 : audio.effect === "reverb" ? 2 : 1;
+      $("micMode").value = position;
+      $("micMode").setAttribute(
+        "aria-valuetext",
+        ["Silencio", "Voz", "Eco suave"][position],
+      );
+      document
+        .querySelectorAll("[data-mic-position]")
+        .forEach((el) =>
+          el.classList.toggle(
+            "selected",
+            Number(el.dataset.micPosition) === position,
+          ),
+        );
       $("micFigure").dataset.state = state;
       $("micFigureCaption").textContent =
         state === "output"
@@ -109,6 +123,7 @@
     },
     onLevel({ rms, peak }) {
       $("inputLevel").value = Math.min(1, rms * 4);
+      $("levelText").hidden = peak < 0.95;
       $("levelText").textContent = !audio.stream
         ? "Sin captura"
         : peak >= 0.95
@@ -123,41 +138,68 @@
   $("gainControl").value = micPreferences.gain;
   $("gainValue").value = micPreferences.gain + "%";
   $("gainControl").disabled = true;
-  $("echoSwitch").checked = micPreferences.effect === "reverb";
   $("keepAwake").checked = micPreferences.keepAwake;
-  $("micBtn").onclick = async () => {
-    if (audio.state === "requesting") {
-      microphoneWanted = false;
-      await audio.stop();
-      return;
-    }
-    if (!joined && !microphoneWanted)
-      return notify("Entra al show para activar el micrófono.");
-    microphoneWanted = true;
-    if (audio.state === "interrupted") await audio.resume();
-    else await audio.start();
-  };
-  $("stopMicBtn").onclick = async () => {
+  async function closeMicrophone() {
     microphoneWanted = false;
-    await awake.setEnabled(false);
-    await audio.stop();
+    micClosing = true;
+    $("micBtn").disabled = true;
+    const stopped = audio.stop();
+    void awake.setEnabled(false);
+    if ($("micDialog").open) $("micDialog").close();
+    document.body.classList.remove("mic-open");
+    await stopped;
+    micClosing = false;
+    $("micBtn").disabled = !joined;
+    $("micBtn").focus();
+    const pending = deferredMicDialog;
+    deferredMicDialog = null;
+    if (
+      !leaving &&
+      ((pending === "receiveDialog" && invitation) ||
+        (pending === "challengeDialog" &&
+          challengeInvitation?.expiresAt > Date.now()))
+    )
+      $(pending).showModal();
+  }
+  $("micBtn").onclick = async () => {
+    if (!joined) return notify("Entra al show para activar el micrófono.");
+    if (!$("micDialog").open) $("micDialog").showModal();
+    document.body.classList.add("mic-open");
+    microphoneWanted = true;
+    await audio.start();
   };
-  $("outputSwitch").onchange = async () => {
-    const muted = !$("outputSwitch").checked;
-    if (audio.state === "interrupted") {
-      audio.desiredMuted = muted;
-      await audio.resume();
-    } else await audio.setMuted(muted);
+  $("closeMicBtn").onclick = closeMicrophone;
+  $("micDialog").addEventListener("cancel", (event) => {
+    event.preventDefault();
+    void closeMicrophone();
+  });
+  $("micDialog").addEventListener("close", () => {
+    if (microphoneWanted) void closeMicrophone();
+  });
+  $("resumeMicBtn").onclick = async () => {
+    if (!microphoneWanted) return;
+    const button = $("resumeMicBtn");
+    button.disabled = true;
+    try {
+      if (audio.state === "error") await audio.start();
+      else await audio.resume();
+    } finally {
+      button.disabled = false;
+    }
+  };
+  $("micMode").oninput = async () => {
+    const position = Number($("micMode").value);
+    if (position !== 0) {
+      micPreferences.effect = position === 2 ? "reverb" : "normal";
+      audio.setEffect(micPreferences.effect);
+      saveMicPreferences();
+    }
+    await audio.setMuted(position === 0);
   };
   $("gainControl").oninput = (e) => {
     micPreferences.gain = Number(e.target.value);
     audio.setGain(micPreferences.gain / 100);
     $("gainValue").value = micPreferences.gain + "%";
-    saveMicPreferences();
-  };
-  $("echoSwitch").onchange = () => {
-    micPreferences.effect = $("echoSwitch").checked ? "reverb" : "normal";
-    audio.setEffect(micPreferences.effect);
     saveMicPreferences();
   };
   $("keepAwake").onchange = () => {
@@ -246,8 +288,7 @@
   $("leaveBtn").onclick = async () => {
     leaving = true;
     microphoneWanted = false;
-    await awake.setEnabled(false);
-    await audio.stop();
+    await closeMicrophone();
     session = null;
     joined = false;
     storage.clear();
@@ -451,7 +492,8 @@
     invitation = data;
     $("invitationText").textContent =
       `${data.fromName} te invita a cantar esta canción.`;
-    if (!$("receiveDialog").open) $("receiveDialog").showModal();
+    if ($("micDialog").open) deferredMicDialog = "receiveDialog";
+    else if (!$("receiveDialog").open) $("receiveDialog").showModal();
   });
   $("acceptInviteBtn").onclick = () => {
     if (invitation) socket.emit("accept-invitation", invitation.fromId);
@@ -529,19 +571,17 @@
       (button.onclick = () => {
         if (!joined || !socket.connected)
           return notify("Conéctate antes de elegir equipo.");
-        socket
-          .timeout(5000)
-          .emit(
-            "choose-team",
-            {
-              team: button.dataset.team === "none" ? null : button.dataset.team,
-            },
-            (error, result) => {
-              $("teamFeedback").textContent = error
-                ? "No se confirmó el equipo."
-                : result?.message || "Sin respuesta.";
-            },
-          );
+        socket.timeout(5000).emit(
+          "choose-team",
+          {
+            team: button.dataset.team === "none" ? null : button.dataset.team,
+          },
+          (error, result) => {
+            $("teamFeedback").textContent = error
+              ? "No se confirmó el equipo."
+              : result?.message || "Sin respuesta.";
+          },
+        );
       }),
   );
   socket.on("team-chosen", ({ team }) => {
@@ -790,7 +830,8 @@
       data.mode === "surprise" ? "Desafío sorpresa" : "Comparte el escenario";
     $("challengeInvitationText").textContent =
       `${data.fromName} te invita a ${labels[data.mode]}. ${data.genre ? "Tema: " + data.genre + ". " : ""}${data.mode === "surprise" ? "La canción se revela al aceptar. " : ""}Tienes dos minutos para responder.`;
-    if (!$("challengeDialog").open) $("challengeDialog").showModal();
+    if ($("micDialog").open) deferredMicDialog = "challengeDialog";
+    else if (!$("challengeDialog").open) $("challengeDialog").showModal();
   });
   function respondChallenge(accept) {
     if (!challengeInvitation || replyingChallenge) return;

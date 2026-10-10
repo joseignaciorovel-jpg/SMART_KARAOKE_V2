@@ -47,18 +47,19 @@ test('mobile tabs, session, real-state labels, saved preferences and continuous 
         h.window.document.querySelector('[data-tab=songs]').click();
         assert.equal(h.$('songs').hidden, false); assert.equal(h.$('sing').hidden, true);
         h.window.document.querySelector('[data-tab=sing]').click();
-        h.$('micBtn').click(); assert.equal(h.$('audioControls').hidden, false);
-        assert.equal(h.$('outputSwitch').checked,false);
-        h.$('outputSwitch').checked=true;h.$('outputSwitch').dispatchEvent(new h.window.Event('change'));await Promise.resolve();
-        assert.equal(h.$('micStatus').textContent,'Tu micrófono está sonando');
-        h.$('echoSwitch').checked=true;h.$('echoSwitch').dispatchEvent(new h.window.Event('change'));
+        h.$('micBtn').click(); assert.equal(h.$('micDialog').open, true);
+        assert.equal(h.$('micMode').value,'0');
+        h.$('micMode').value='1';h.$('micMode').dispatchEvent(new h.window.Event('input'));await Promise.resolve();
+        assert.equal(h.$('micStatus').textContent,'Voz · salida activa');
+        h.$('micMode').value='2';h.$('micMode').dispatchEvent(new h.window.Event('input'));await Promise.resolve();
+        assert.equal(h.engine.effect,'reverb');assert.equal(h.$('micMode').getAttribute('aria-valuetext'),'Eco suave');
         h.$('gainControl').value=25;h.$('gainControl').dispatchEvent(new h.window.Event('input'));
         assert.equal(JSON.parse(h.window.localStorage.getItem('firevoice-mic-preferences')).gain,25);
         h.socket.fire('state-update', { ...state, currentSong: { ...state.currentSong, id: 'song-2', requesterId: 'other' } });
         assert.equal(h.engine.state,'output');assert.equal(h.engine.effect,'reverb');
         h.socket.disconnect();assert.equal(h.engine.stops,0);assert.match(h.$('connectionStatus').textContent,/Sin conexión/);
         h.window.document.dispatchEvent(new h.window.Event('visibilitychange'));assert.equal(h.engine.stops,0);
-        h.$('stopMicBtn').click();await Promise.resolve();await Promise.resolve();assert.equal(h.engine.state,'idle');
+        h.$('closeMicBtn').click();await new Promise(resolve=>setImmediate(resolve));assert.equal(h.engine.state,'idle');assert.equal(h.$('micDialog').open,false);
         assert.ok(!h.socket.sent.some(item => item.event === 'mic-audio'));
     } finally { h.dom.window.close(); }
 });
@@ -144,5 +145,16 @@ test('joining is free and optional teams appear only when the host enables them'
  h.socket.fire('team-chosen',{team:'red'});assert.match(h.$('userTeamBadge').textContent,/Rojo/);
  h.socket.fire('team-chosen',{team:null});assert.match(h.$('userTeamBadge').textContent,/libre/);
  assert.equal(h.$('soundLibrary').children.length,6);
+ }finally{h.dom.window.close();}
+});
+
+test('immersive microphone keeps invitations outside the singing view and Escape stops capture',async()=>{
+ const h=mobile();try{
+ h.socket.fire('nickname-set',{nickname:'Ana',team:null,participantId:'a',sessionToken:'private'});h.$('micBtn').click();
+ h.$('micMode').value='1';h.$('micMode').dispatchEvent(new h.window.Event('input'));await Promise.resolve();
+ h.socket.fire('receive-invitation',{fromName:'Bea',fromId:'b'});assert.equal(h.$('receiveDialog').open,false);assert.equal(h.$('micDialog').open,true);
+ const cancel=new h.window.Event('cancel',{cancelable:true});h.$('micDialog').dispatchEvent(cancel);await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(cancel.defaultPrevented,true);assert.equal(h.engine.muted,true);assert.equal(h.engine.stops,1);assert.equal(h.$('micDialog').open,false);assert.equal(h.$('receiveDialog').open,true);
+ assert.equal(h.window.document.body.classList.contains('mic-open'),false);
  }finally{h.dom.window.close();}
 });

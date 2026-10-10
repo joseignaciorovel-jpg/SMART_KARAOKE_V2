@@ -89,129 +89,22 @@
               Añade una canción para entrar en la cola.
             </p>
           </article>
-          <article class="card audio-card mic-console">
-            <div class="card-heading">
-              <h2>Tu micrófono</h2>
-              <span id="micLocalBadge" class="badge">Salida local</span>
-            </div>
-            <p id="micStatus" class="audio-status" role="status">
-              Micrófono detenido
-            </p>
-            <div class="mic-instrument">
-              <div class="mic-figure" id="micFigure" aria-hidden="true">
-                <svg viewBox="0 0 120 220" focusable="false">
-                  <defs>
-                    <pattern
-                      id="micMesh"
-                      width="6"
-                      height="6"
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <circle cx="3" cy="3" r="1" fill="#8f91a5" />
-                    </pattern>
-                    <linearGradient id="micMetal">
-                      <stop stop-color="#414659" />
-                      <stop offset=".5" stop-color="#8b91a7" />
-                      <stop offset="1" stop-color="#363b4d" />
-                    </linearGradient>
-                  </defs>
-                  <rect
-                    x="27"
-                    y="10"
-                    width="66"
-                    height="110"
-                    rx="33"
-                    fill="url(#micMetal)"
-                  />
-                  <rect
-                    x="30"
-                    y="13"
-                    width="60"
-                    height="92"
-                    rx="30"
-                    fill="url(#micMesh)"
-                  />
-                  <rect
-                    class="mic-ring"
-                    x="28"
-                    y="102"
-                    width="64"
-                    height="8"
-                    rx="4"
-                  />
-                  <path
-                    d="M19 86v17a41 41 0 0082 0V86"
-                    fill="none"
-                    stroke="#6e748b"
-                    stroke-width="6"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M60 145v52m-25 6h50"
-                    stroke="#6e748b"
-                    stroke-width="7"
-                    stroke-linecap="round"
-                  /></svg
-                ><span id="micFigureCaption">Tu escenario portátil</span>
-              </div>
-              <div id="voiceLevelControl" class="voice-fader">
-                <label for="gainControl">Nivel de voz</label
-                ><output id="gainValue">15%</output
-                ><input
-                  id="gainControl"
-                  type="range"
-                  min="0"
-                  max="60"
-                  value="15"
-                  step="1"
-                  aria-describedby="micSafetyNote"
-                /><span>−</span>
-              </div>
-            </div>
-            <label class="sr-only" for="inputLevel"
-              >Señal de entrada del micrófono</label
-            ><meter id="inputLevel" min="0" max="1" value="0">0</meter>
-            <p id="levelText" class="note">Sin captura</p>
+          <article class="card mic-launch">
+            <h2>Tu micrófono</h2>
+            <p class="note">Una pantalla, un control. Canta a tu ritmo.</p>
             <button id="micBtn" class="primary full" type="button">
               Activar micrófono
             </button>
-            <div id="audioControls" hidden>
-              <label class="switch-row" for="outputSwitch"
-                ><span
-                  ><strong>Salida de voz</strong
-                  ><small>Escuchar tu voz en este dispositivo</small></span
-                ><input id="outputSwitch" type="checkbox" role="switch" /><span
-                  class="switch-track"
-                  aria-hidden="true"
-                ></span
-              ></label>
-              <label class="switch-row" for="echoSwitch"
-                ><span
-                  ><strong>Eco suave</strong
-                  ><small>Un toque de ambiente para tu voz</small></span
-                ><input id="echoSwitch" type="checkbox" role="switch" /><span
-                  class="switch-track"
-                  aria-hidden="true"
-                ></span
-              ></label>
-            </div>
-            <p id="micMessage" class="note" role="status">
-              Activa el micrófono y luego desliza Salida de voz.
-            </p>
             <p id="micSafetyNote" class="note">
-              Empieza con poco nivel. Si aparece un pitido, desactiva Salida de
-              voz y baja el volumen.
+              Empieza con poco nivel. La voz sale por este teléfono o su
+              dispositivo conectado.
             </p>
-            <button id="stopMicBtn" class="secondary full" type="button" hidden>
-              Terminar micrófono
-            </button>
             <details class="mic-options">
               <summary>Opciones del micrófono</summary>
               <label class="switch-row" for="keepAwake"
                 ><span
-                  ><strong>Mantener pantalla activa</strong
-                  ><small
-                    >Evita el bloqueo automático si el sistema lo permite</small
+                  >Mantener pantalla activa<small
+                    >Si el navegador lo permite</small
                   ></span
                 ><input
                   id="keepAwake"
@@ -219,24 +112,14 @@
                   role="switch"
                   checked /><span class="switch-track" aria-hidden="true"></span
               ></label>
-              <p id="wakeStatus" class="note" role="status">
+              <p id="wakeStatus" class="note">
                 Se solicita al activar el micrófono.
-              </p>
-              <p class="note">
-                La salida sigue el altavoz o dispositivo elegido por el sistema.
-                Bloquear manualmente el teléfono puede interrumpir el audio; al
-                volver, pulsa Reanudar micrófono. No se graba ni se envía tu
-                voz.
               </p>
             </details>
             <button id="inviteBtn" class="secondary full" type="button" hidden>
               Invitar a cantar un dúo
             </button>
           </article>
-          <p class="note centered">
-            El micrófono sigue activo hasta que pulses Terminar, salgas o el
-            sistema interrumpa el audio.
-          </p>
         </section>
         <section id="songs" class="tab-panel" hidden>
           <article class="card">
@@ -399,6 +282,139 @@
       </div>
       <footer>FireVoice · Canta, comparte, disfruta</footer>
     </main>
+    <dialog
+      id="micDialog"
+      class="mic-fullscreen"
+      aria-labelledby="micDialogTitle"
+      aria-describedby="micModeHint"
+    >
+      <header class="mic-top">
+        <div>
+          <span class="eyebrow">FIREVOICE</span>
+          <h2 id="micDialogTitle">Tu voz, tu momento</h2>
+        </div>
+        <button
+          id="closeMicBtn"
+          class="mic-close"
+          type="button"
+          aria-label="Cerrar y apagar micrófono"
+          autofocus
+        >
+          ×
+        </button>
+      </header>
+      <p id="micStatus" class="mic-live-status" role="status">
+        Esperando permiso
+      </p>
+      <div class="mic-stage">
+        <div class="mic-figure" id="micFigure" aria-hidden="true">
+          <svg viewBox="0 0 120 220" focusable="false">
+            <defs>
+              <pattern
+                id="micMesh"
+                width="6"
+                height="6"
+                patternUnits="userSpaceOnUse"
+              >
+                <circle cx="3" cy="3" r="1" fill="#8f91a5" />
+              </pattern>
+              <linearGradient id="micMetal">
+                <stop stop-color="#414659" />
+                <stop offset=".5" stop-color="#8b91a7" />
+                <stop offset="1" stop-color="#363b4d" />
+              </linearGradient>
+            </defs>
+            <rect
+              x="27"
+              y="10"
+              width="66"
+              height="110"
+              rx="33"
+              fill="url(#micMetal)"
+            />
+            <rect
+              x="30"
+              y="13"
+              width="60"
+              height="92"
+              rx="30"
+              fill="url(#micMesh)"
+            />
+            <rect
+              class="mic-ring"
+              x="28"
+              y="102"
+              width="64"
+              height="8"
+              rx="4"
+            />
+            <rect
+              x="44"
+              y="112"
+              width="32"
+              height="101"
+              rx="12"
+              fill="url(#micMetal)"
+            />
+            <rect
+              x="47"
+              y="192"
+              width="26"
+              height="15"
+              rx="5"
+              fill="#252838"
+            /></svg
+          ><span id="micFigureCaption" class="sr-only">Tu micrófono</span>
+        </div>
+        <div id="audioControls" class="mic-mode-control">
+          <label class="sr-only" for="micMode">Modo del micrófono</label
+          ><input
+            id="micMode"
+            class="mic-mode-switch"
+            type="range"
+            min="0"
+            max="2"
+            step="1"
+            value="0"
+            aria-valuetext="Silencio"
+            aria-describedby="micModeHint"
+            disabled
+          />
+          <div class="mic-detents" aria-hidden="true">
+            <span data-mic-position="2">Eco</span
+            ><span data-mic-position="1">Voz</span
+            ><span data-mic-position="0" class="selected">Silencio</span>
+          </div>
+        </div>
+        <div class="voice-fader mic-side-level">
+          <label for="gainControl">Nivel</label
+          ><output id="gainValue">15%</output
+          ><input
+            id="gainControl"
+            type="range"
+            min="0"
+            max="60"
+            value="15"
+            step="1"
+            aria-describedby="micSafetyNote"
+            disabled
+          />
+        </div>
+      </div>
+      <div class="mic-bottom">
+        <p id="micModeHint">Desliza el control: silencio · voz · eco suave.</p>
+        <label class="sr-only" for="inputLevel">Señal de entrada</label
+        ><meter id="inputLevel" min="0" max="1" value="0">0</meter>
+        <p id="levelText" class="mic-level-note" hidden>Sin captura</p>
+        <p id="micMessage" class="mic-message" role="status">
+          Autoriza el micrófono para empezar.
+        </p>
+        <button id="resumeMicBtn" class="primary" type="button" hidden>
+          Reanudar micrófono
+        </button>
+        <p class="mic-exit-note">La X apaga el micrófono y vuelve al show.</p>
+      </div>
+    </dialog>
     <dialog id="challengeDialog">
       <h2 id="challengeDialogTitle">Te invitan al escenario</h2>
       <p id="challengeInvitationText"></p>

@@ -10,7 +10,7 @@ El analizador mide la entrada antes de la ganancia de salida. La ganancia comien
 
 No se utiliza MediaRecorder, no se registra la voz y no se transmiten fragmentos de audio por Socket.IO. Música y letra continúan en la pantalla de YouTube; la voz sale por el dispositivo de salida del teléfono. Los eventos Socket.IO transmiten canciones, identidades de sesión, turnos, reacciones y efectos.
 
-La interfaz permite activar una vez y usar dos switches: salida de voz y eco suave, con un nivel vertical. Nivel, eco y preferencia de pantalla activa se guardan localmente. El eco es individual; no cambia el audio de otros participantes. La salida empieza silenciada al activar desde cero.
+Activar micrófono abre un diálogo que cubre todo el teléfono y contiene el foco. Un selector central con tres posiciones (Silencio, Voz, Eco suave) y un nivel vertical lateral reemplazan los dos switches. La X y Escape detienen captura/salida, cierran la vista y devuelven el foco al botón de activación. Las invitaciones se posponen mientras está abierta esta vista; al salir aparecen si siguen vigentes. La vista usa el área disponible con `100dvh` y respeta las zonas seguras; no requiere el permiso de Fullscreen del navegador. Nivel, eco y preferencia de pantalla activa se guardan localmente. El eco es individual; no cambia el audio de otros participantes. La salida empieza silenciada al activar desde cero.
 
 Cambiar de canción, desconectar el show o pasar temporalmente a segundo plano ya no detiene deliberadamente el micrófono local. Terminar, salir o abandonar la página sí liberan la captura. El navegador o sistema puede suspender o terminar el audio al bloquear, recibir una llamada o cambiar de aplicación. Se detecta esa interrupción y se ofrece Reanudar conservando nivel y eco. Una pulsación explícita reanuda la salida que estaba elegida; nunca se recupera una salida audible automáticamente.
 
@@ -32,7 +32,7 @@ Con la captura activa se solicita Screen Wake Lock si está disponible y la pág
 - Recuperación de sesión y canción después de reconectar mientras el servidor sigue activo.
 - Comprobación de permisos de anfitrión y aceptación de dúos asociados a una canción vigente.
 - Ausencia de retransmisión del antiguo evento `mic-audio`.
-- Navegación móvil, switches, preferencias y continuidad al cambiar de canción o desconectar.
+- Navegación móvil, selector de tres posiciones, cierre de diálogo, preferencias y continuidad al cambiar de canción o desconectar.
 - Wake Lock: recuperación al volver, solicitudes tardías canceladas y rechazo recuperable.
 - Nombres y títulos se insertan como texto en la nueva interfaz; etiquetas en controles de la pantalla.
 
