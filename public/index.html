@@ -47,7 +47,7 @@
 <main class="tv-container" id="showMain" inert>
     <header class="tv-header"><a class="show-brand" href="/" aria-label="FireVoice, volver al inicio"><span class="wordmark">FireVoice</span><small>TU NOCHE. TU ESCENARIO.</small></a>
         <div id="teamScoreboard" class="team-scoreboard" aria-label="Puntajes por equipo"><div class="red"><span>ROJO</span><strong id="scoreRed">0</strong></div><span class="versus">VS</span><div class="blue"><span>AZUL</span><strong id="scoreBlue">0</strong></div></div>
-        <div class="header-actions"><span id="showConnection" class="live-badge" role="status">Conectando…</span><button id="fullscreenBtn" class="secondary" aria-label="Pantalla completa" aria-pressed="false">⛶ <span>Pantalla completa</span></button><button id="hostOpenBtn" class="secondary">Anfitrión</button></div>
+        <div class="header-actions"><span id="showConnection" class="live-badge" role="status">Conectando…</span><button id="cinemaBtn" class="secondary" aria-label="Modo cine" aria-pressed="false">▣ <span>Modo cine</span></button><button id="fullscreenBtn" class="secondary" aria-label="Pantalla completa" aria-pressed="false">⛶ <span>Pantalla completa</span></button><button id="hostOpenBtn" class="secondary">Anfitrión</button></div>
     </header>
     <p id="displayFeedback" class="display-feedback" role="status" hidden></p>
     <div class="tv-main-grid">
@@ -57,7 +57,7 @@
                 <div class="video-stage"><div id="youtubePlayer"></div><div id="stageEmpty" class="stage-empty"><span class="stage-symbol" aria-hidden="true">✦</span><p class="eyebrow">FIREVOICE ESTÁ LISTO</p><h2>Tu próxima gran<br>canción empieza aquí.</h2><p>Escanea el QR y añade la primera canción.</p><a class="join-link" href="/join.html">Elegir mi canción ↗</a></div><p id="playerMessage" class="player-message" role="status" hidden></p></div>
             </div>
             <div class="now-playing-card"><div class="singer-avatar" aria-hidden="true">♫</div><div class="now-playing-copy"><p class="eyebrow">EN EL ESCENARIO</p><div id="currentSongDisplay"><h2>El próximo artista puedes ser tú</h2><p>Esperando la primera canción</p></div></div>
-                <div class="controls-container" id="hostControls" hidden><button class="magic-btn" id="prevBtn" aria-label="Canción anterior" title="Anterior">⏮<small>Anterior</small></button><button class="magic-btn" id="playBtn" aria-label="Reproducir" title="Reproducir">▶<small>Reproducir</small></button><button class="magic-btn" id="pauseBtn" aria-label="Pausar" title="Pausar">Ⅱ<small>Pausar</small></button><button class="magic-btn" id="skipBtn" aria-label="Siguiente canción" title="Siguiente">⏭<small>Siguiente</small></button><button class="magic-btn" id="cinemaBtn" aria-label="Modo escenario" aria-pressed="false" title="Modo escenario">⛶<small>Escenario</small></button></div>
+                <div class="controls-container" id="hostControls" hidden><button class="magic-btn" id="prevBtn" aria-label="Canción anterior" title="Anterior">⏮<small>Anterior</small></button><button class="magic-btn" id="playBtn" aria-label="Reproducir" title="Reproducir">▶<small>Reproducir</small></button><button class="magic-btn" id="pauseBtn" aria-label="Pausar" title="Pausar">Ⅱ<small>Pausar</small></button><button class="magic-btn" id="stageFinishBtn" aria-label="Finalizar y continuar">✓<small>Finalizar y continuar</small></button><button class="magic-btn" id="skipBtn" aria-label="Siguiente canción" title="Siguiente">⏭<small>Saltar canción</small></button></div>
             </div>
             <div class="audience-strip"><span id="reactionEmoji" aria-hidden="true">👏</span><p id="reactionMsg">Anima al cantante con tus reacciones.</p><span class="audience-caption">Energía del público · no mide el micrófono</span></div>
         </section>
@@ -73,7 +73,7 @@
     </div>
     <footer class="show-footer">FireVoice · Hecho para compartir el escenario</footer>
 </main>
-<div id="immersiveToolbar" class="immersive-toolbar" hidden><button id="exitStageBtn" class="secondary">← Salir del escenario</button><span id="immersiveSinger">FireVoice</span><button id="immersivePauseBtn" class="secondary">Pausar</button></div>
+<div id="immersiveToolbar" class="immersive-toolbar" hidden><button id="exitStageBtn" class="secondary">← Salir del escenario</button><span id="immersiveSinger">FireVoice</span><button id="immersivePauseBtn" class="secondary">Reproducir / pausar</button><button id="immersiveFinishBtn" class="secondary" hidden>Finalizar y continuar</button><button id="immersiveSkipBtn" class="secondary" hidden>Saltar canción</button></div>
 
 <!-- Cartel para modo cine: muestra la siguiente canción (oculto por defecto) -->
 <div id="cinemaNextSongCard" style="display: none; position: fixed; bottom: 12px; left: 300px; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); border-radius: 20px; padding: 10px 16px; z-index: 10002; pointer-events: none; border-left: 4px solid #ffcc33; max-width: 280px;">
@@ -141,6 +141,8 @@
         document.getElementById('modeToggleBtn').hidden = !enabled;
         document.getElementById('hostSettings').hidden = !enabled;
         document.getElementById('immersivePauseBtn').hidden = !enabled;
+        document.getElementById('immersiveFinishBtn').hidden = !enabled;
+        document.getElementById('immersiveSkipBtn').hidden = !enabled;
         document.getElementById('hostForm').hidden = enabled;
         document.getElementById('hostStatus').textContent = enabled ? 'Controles habilitados en esta pantalla' : 'Pantalla de show · controles bloqueados';
         updateQueue(currentQueue);
@@ -160,7 +162,7 @@
         document.getElementById('hostKey').value = '';
         authenticateHost();
     };
-    socket.on('connect', () => { document.getElementById('showConnection').textContent = 'Show conectado'; socket.emit('get-state'); if (hostKey) authenticateHost(); });
+    socket.on('connect', () => { document.getElementById('showConnection').textContent = 'Show conectado'; socket.emit('register-show'); socket.emit('get-state'); if (hostKey) authenticateHost(); });
     socket.on('disconnect', () => { setHostAccess(false); cancelChacalPause(false); document.getElementById('showConnection').textContent = 'Sin conexión'; });
     socket.on('error-msg', message => { document.getElementById('hostStatus').textContent = message; });
     let ytPlayer = null;
@@ -516,6 +518,7 @@
     document.getElementById('playBtn').onclick = () => ytPlayer?.playVideo();
     document.getElementById('pauseBtn').onclick = () => { chacalWasPlaying = false; ytPlayer?.pauseVideo(); };
     document.getElementById('prevBtn').onclick = () => socket.emit('prev-song');
+    document.getElementById('stageFinishBtn').onclick = () => { if (isHost && lastSongId) socket.emit('finish-song', {songId:lastSongId}); };
     document.getElementById('skipBtn').onclick = () => socket.emit('skip-song');
     document.getElementById('clearBtn').onclick = () => { if(confirm('¿Vaciar cola y puntajes?')) socket.emit('clear-queue'); };
 
@@ -550,9 +553,20 @@
         immersiveTimer = setTimeout(() => { if (!document.getElementById('immersiveToolbar').contains(document.activeElement)) document.body.classList.remove('stage-awake'); }, 3000);
     }
     document.getElementById('fullscreenBtn').onclick = toggleFullscreen;
-    document.getElementById('cinemaBtn').onclick = () => { if (!isHost) return; setStage(!document.body.classList.contains('cinema-mode')); };
+    document.getElementById('cinemaBtn').onclick = () => setStage(!document.body.classList.contains('cinema-mode'));
     document.getElementById('exitStageBtn').onclick = () => setStage(false);
     document.getElementById('immersivePauseBtn').onclick = () => { if (!isHost || !ytPlayer) return; if (ytPlayer.getPlayerState?.() === 1) { chacalWasPlaying = false; ytPlayer.pauseVideo(); } else ytPlayer.playVideo(); };
+    document.getElementById('immersiveFinishBtn').onclick = () => { if (isHost && lastSongId) socket.emit('finish-song', {songId:lastSongId}); };
+    document.getElementById('immersiveSkipBtn').onclick = () => { if (isHost) socket.emit('skip-song'); };
+    socket.on('show-command', (payload, ack) => {
+        let ok = true, message = '';
+        if (payload.action === 'cinema') setStage(Boolean(payload.enabled));
+        else if (payload.action === 'play-pause' && ytPlayer?.getPlayerState) {
+            if (ytPlayer.getPlayerState() === 1) { chacalWasPlaying = false; ytPlayer.pauseVideo(); }
+            else ytPlayer.playVideo();
+        } else { ok = false; message = 'El reproductor todavía no está listo.'; }
+        if (typeof ack === 'function') ack({ok, message, cinema:document.body.classList.contains('cinema-mode')});
+    });
     document.addEventListener('pointermove', wakeStageControls);
     document.addEventListener('keydown', event => { if (event.key === 'Escape' && document.body.classList.contains('cinema-mode')) setStage(false); else wakeStageControls(); });
     function syncFullscreen() {

@@ -158,3 +158,22 @@ test('immersive microphone keeps invitations outside the singing view and Escape
  assert.equal(h.window.document.body.classList.contains('mic-open'),false);
  }finally{h.dom.window.close();}
 });
+
+test('phone host controls stay outside the microphone, clear keys and lock on disconnect', () => {
+    const h = mobile();
+    try {
+        assert.equal(h.$('remoteHostControls').hidden, true);
+        h.$('remoteHostKey').value = 'test';
+        h.$('remoteHostForm').dispatchEvent(new h.window.Event('submit', {cancelable:true}));
+        assert.equal(h.$('remoteHostKey').value, '');
+        assert.equal(h.$('remoteHostControls').hidden, false);
+        assert.equal(h.$('micDialog').contains(h.$('remoteHostControls')), false);
+        h.socket.fire('state-update', {currentSong:{id:'song-remote', title:'Prueba'}, queue:[]});
+        h.$('remoteFinishBtn').click();
+        assert.ok(h.socket.sent.some(item=>item.event==='finish-song' && item.payload.songId==='song-remote'));
+        h.$('remoteSkipBtn').click();
+        assert.ok(h.socket.sent.some(item=>item.event==='skip-song'));
+        h.socket.disconnect();
+        assert.equal(h.$('remoteHostControls').hidden, true);
+    } finally { h.dom.window.close(); }
+});

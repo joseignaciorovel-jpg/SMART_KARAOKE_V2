@@ -378,6 +378,23 @@ io.on("connection", (socket) => {
           : "Configura HOST_KEY en el servidor para habilitar los controles.",
       });
   });
+  socket.on('register-show', () => { socket.data.isShow = true; });
+  socket.on('show-command', (payload = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    if (!socket.data.isHost) return reply({ok:false, message:'Esta acción requiere acceso de anfitrión.'});
+    if (!['cinema', 'play-pause'].includes(payload?.action) ||
+        (payload.action === 'cinema' && typeof payload.enabled !== 'boolean'))
+      return reply({ok:false, message:'Control no válido.'});
+    const screens = [...io.sockets.sockets.values()].filter(client => client.data.isShow);
+    if (!screens.length) return reply({ok:false, message:'Abre la pantalla del show antes de usar este control.'});
+    let pending = screens.length, success = false;
+    for (const screen of screens) screen.timeout(5000).emit('show-command',
+      {action:payload.action, enabled:payload.enabled}, (error, result) => {
+        pending--;
+        if (!success && !error && result?.ok) { success = true; reply(result); }
+        if (!pending && !success) reply({ok:false, message:'La pantalla no respondió o el reproductor no está listo.'});
+      });
+  });
   socket.on("join-team", (payload = {}) => {
     if (!payload || typeof payload !== "object") return;
     const { nickname, team, sessionToken } = payload;

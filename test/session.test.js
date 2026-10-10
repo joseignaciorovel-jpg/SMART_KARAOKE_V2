@@ -147,3 +147,21 @@ test('free participants can opt into teams without changing identity and receive
  await ack(host,'set-chacal-options',{mode:'fiesta',allowBoo:false});assert.equal((await ack(guest,'trigger-effect','abucheo')).ok,false);
  assert.equal((await ack(guest,'trigger-effect','silbido')).ok,true);assert.equal((await ack(guest,'trigger-effect','animo')).ok,false);
 });
+
+test('remote show commands require host access, validate payload and acknowledge an actual screen response', async () => {
+    const host = await connect(), screen = await connect(), guest = await connect();
+    assert.equal((await ack(guest, 'show-command', {action:'cinema', enabled:true})).ok, false);
+    await ack(host, 'authenticate-host', {key:process.env.HOST_KEY});
+    assert.equal((await ack(host, 'show-command', {action:'cinema', enabled:true})).ok, false);
+    screen.emit('register-show'); await state(screen);
+    let received;
+    screen.on('show-command', (payload, reply) => { received = payload; reply({ok:true, cinema:payload.enabled}); });
+    assert.equal((await ack(host, 'show-command', {action:'cinema', enabled:'yes'})).ok, false);
+    assert.equal((await ack(host, 'show-command', {action:'delete-all'})).ok, false);
+    assert.equal((await ack(host, 'show-command', {action:'cinema', enabled:true})).cinema, true);
+    assert.deepEqual(received, {action:'cinema', enabled:true});
+    assert.equal((await ack(host, 'show-command', {action:'play-pause'})).ok, true);
+    await ack(host, 'authenticate-host', {key:''});
+    assert.equal((await ack(host, 'show-command', {action:'cinema', enabled:false})).ok, false);
+    screen.disconnect();
+});

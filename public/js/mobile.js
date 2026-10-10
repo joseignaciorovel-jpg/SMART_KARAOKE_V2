@@ -75,6 +75,38 @@
       $("feedback").hidden = true;
     }, 8000);
   }
+  let remoteHost = false;
+  function setRemoteHost(enabled) {
+    remoteHost = enabled;
+    $('remoteHostForm').hidden = enabled;
+    $('remoteHostControls').hidden = !enabled;
+    $('remoteHostKey').value = '';
+    $('remoteHostStatus').textContent = enabled ? 'Controles habilitados' : 'Controles bloqueados';
+  }
+  $('remoteHostForm').onsubmit = event => {
+    event.preventDefault();
+    const key = $('remoteHostKey').value;
+    $('remoteHostKey').value = '';
+    socket.timeout(5000).emit('authenticate-host', {key}, (error, result) => {
+      setRemoteHost(!error && Boolean(result?.ok));
+      if (error || !result?.ok) $('remoteHostStatus').textContent = error ? 'Sin respuesta. Intenta nuevamente.' : result?.message || 'No se pudo habilitar.';
+    });
+  };
+  $('remoteLockBtn').onclick = () => { socket.emit('authenticate-host', {key:''}); setRemoteHost(false); };
+  function remoteCommand(payload, control) {
+    if (!remoteHost || !socket.connected) return;
+    control.disabled = true;
+    socket.timeout(7000).emit('show-command', payload, (error, result) => {
+      control.disabled = false;
+      $('remoteHostStatus').textContent = !error && result?.ok ? 'Control aplicado en la pantalla' : result?.message || 'La pantalla no respondió.';
+      if (payload.action === 'cinema' && (error || !result?.ok)) control.checked = !payload.enabled;
+    });
+  }
+  $('remotePlayBtn').onclick = () => remoteCommand({action:'play-pause'}, $('remotePlayBtn'));
+  $('remoteCinema').onchange = () => remoteCommand({action:'cinema', enabled:$('remoteCinema').checked}, $('remoteCinema'));
+  $('remoteFinishBtn').onclick = () => { if (remoteHost && activeSongId) socket.emit('finish-song', {songId:activeSongId}); };
+  $('remoteSkipBtn').onclick = () => { if (remoteHost && activeSongId) socket.emit('skip-song'); };
+  socket.on('disconnect', () => setRemoteHost(false));
   const awake = new ScreenAwake((message) => {
     $("wakeStatus").textContent = message;
   });
@@ -412,6 +444,8 @@
     }
     receivedState = true;
     activeSongId = newId;
+    $("remoteFinishBtn").disabled = !newId;
+    $("remoteSkipBtn").disabled = !newId;
     canSing = Boolean(
       session &&
       data.currentSong &&

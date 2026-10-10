@@ -706,3 +706,5 @@ body.mic-open {
 #micMode{height:112px;min-height:0;margin:0}
 #audioControls.mic-mode-control{margin:0}
 @media(max-height:600px){#micMode{height:88px}}
+
+.remote-host{margin:12px 0}.remote-host summary{cursor:pointer;font-weight:600}.remote-host[open] summary{margin-bottom:16px}#remoteHostControls>button{margin:6px 0}

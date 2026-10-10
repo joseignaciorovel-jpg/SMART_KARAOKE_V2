@@ -5,7 +5,7 @@ const {JSDOM} = require('jsdom');
 function screen() {
     const dom = new JSDOM(fs.readFileSync('public/index.html','utf8'), {url:'https://firevoice.test/',runScripts:'outside-only'});
     const {window} = dom, handlers = new Map(), sent = [], timeouts = [];
-    const socket = {on(name, fn){const list = handlers.get(name)||[];list.push(fn);handlers.set(name,list);}, emit(name,payload,ack){sent.push({name,payload});if(name==='authenticate-host'&&ack)ack(null,{ok:payload.key==='test-key'});}, timeout(){return this;}, fire(name,value){for(const fn of handlers.get(name)||[])fn(value);}};
+    const socket = {on(name, fn){const list = handlers.get(name)||[];list.push(fn);handlers.set(name,list);}, emit(name,payload,ack){sent.push({name,payload});if(name==='authenticate-host'&&ack)ack(null,{ok:payload.key==='test-key'});}, timeout(){return this;}, fire(name,...args){for(const fn of handlers.get(name)||[])fn(...args);}};
     window.io = () => socket; window.confetti = () => {};
     window.eval(fs.readFileSync('public/js/sound-library.js','utf8'));
     window.fetch = async () => ({ok:true,json:async()=>({qrImage:'data:image/png;base64,AA=='})});
@@ -83,6 +83,23 @@ test('show lighting, normalized ranking, backup status and same-video duel legs 
         await new Promise(resolve=>setImmediate(resolve));assert.equal(loads,2);
         h.host();h.$('finishSongBtn').click();assert.equal(h.sent.at(-1).name,'finish-song');assert.equal(h.sent.at(-1).payload.songId,'leg2');
         assert.match(h.$('duelTitle').textContent,/Ana vs. Bea/);
+        await new Promise(resolve=>setImmediate(resolve));
+    }finally{h.dom.window.close();}
+});
+
+test('cine is available without host access and remote commands update the real show view', async () => {
+    const h=screen();try {
+        h.$('cinemaBtn').click();
+        assert.equal(h.window.document.body.classList.contains('cinema-mode'),true);
+        assert.equal(h.$('immersiveSkipBtn').hidden,true);
+        let response;
+        h.socket.fire('show-command',{action:'cinema',enabled:false},result=>response=result);
+        assert.equal(response.ok,true);assert.equal(response.cinema,false);
+        assert.equal(h.window.document.body.classList.contains('cinema-mode'),false);
+        h.socket.fire('show-command',{action:'play-pause'},result=>response=result);
+        assert.equal(response.ok,false);
+        h.host();assert.equal(h.$('immersiveSkipBtn').hidden,false);
+        h.$('immersiveSkipBtn').click();assert.ok(h.sent.some(item=>item.name==='skip-song'));
         await new Promise(resolve=>setImmediate(resolve));
     }finally{h.dom.window.close();}
 });

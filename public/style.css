@@ -1254,3 +1254,5 @@ body[data-lighting="party"] .performance::before {
   outline: 3px solid #f5c490;
   outline-offset: 4px;
 }
+
+.immersive-toolbar{flex-wrap:wrap;gap:10px;max-width:calc(100vw - 32px)}

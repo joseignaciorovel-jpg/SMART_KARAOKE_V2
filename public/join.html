@@ -30,6 +30,23 @@
         aria-live="polite"
         hidden
       ></p>
+      <details class="card remote-host">
+        <summary>Control del show · anfitrión</summary>
+        <form id="remoteHostForm">
+          <label for="remoteHostKey">Clave de anfitrión</label>
+          <input id="remoteHostKey" type="password" autocomplete="off" required />
+          <button class="secondary" type="submit">Habilitar controles</button>
+        </form>
+        <p id="remoteHostStatus" class="note" role="status">Usa la misma clave de la pantalla principal.</p>
+        <div id="remoteHostControls" hidden>
+          <button id="remotePlayBtn" class="secondary full" type="button">Reproducir / pausar</button>
+          <button id="remoteFinishBtn" class="primary full" type="button">Finalizar y continuar</button>
+          <button id="remoteSkipBtn" class="secondary full" type="button">Saltar canción</button>
+          <label class="switch-row"><span>Modo cine<small>Se aplica en la pantalla del show.</small></span><input id="remoteCinema" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span></label>
+          <p class="note">Finalizar registra la actuación. Saltar la excluye del ranking. Pantalla completa se activa directamente en la pantalla del show.</p>
+          <button id="remoteLockBtn" class="text-button" type="button">Bloquear controles</button>
+        </div>
+      </details>
       <section id="loginSection" class="card welcome">
         <p class="eyebrow">LA NOCHE ES TUYA</p>
         <h1>Tu voz. Tu escenario.</h1>
