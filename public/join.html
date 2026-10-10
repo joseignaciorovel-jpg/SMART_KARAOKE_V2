@@ -1,83 +1,337 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#11111b">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#11111b" />
     <title>FireVoice · Tu escenario</title>
-    <link rel="stylesheet" href="/mobile.css">
+    <link rel="stylesheet" href="/mobile.css" />
     <script src="/socket.io/socket.io.js" defer></script>
     <script src="/js/audio-engine.js" defer></script>
     <script src="/js/mobile.js" defer></script>
-</head>
-<body>
+  </head>
+  <body>
     <main class="app-shell">
-        <header class="app-header"><span class="brand">🔥 FireVoice</span><span id="connectionStatus" class="badge" role="status">Conectando…</span></header>
-        <p id="feedback" class="feedback" role="status" aria-live="polite" hidden></p>
-        <section id="loginSection" class="card welcome">
-            <p class="eyebrow">LA NOCHE ES TUYA</p><h1>Tu voz. Tu escenario.</h1>
-            <p>Únete al show, añade tu canción y canta desde el celular.</p>
-            <form id="joinForm">
-                <label for="nicknameInput">¿Cómo te presentamos?</label>
-                <input id="nicknameInput" placeholder="Tu nombre" maxlength="40" autocomplete="nickname" required>
-                <fieldset><legend>Elige tu equipo</legend><div class="team-options">
-                    <label><input type="radio" name="team" value="red" checked><span>🔴 Rojo</span></label>
-                    <label><input type="radio" name="team" value="blue"><span>🔵 Azul</span></label>
-                </div></fieldset>
-                <button id="enterBtn" class="primary full">Entrar al show</button>
-            </form>
-            <p class="note">El micrófono pide permiso solo cuando lo activas. Tu voz sale por este dispositivo; no se graba ni se envía a la pantalla.</p>
-        </section>
-        <div id="mainSection" hidden>
-            <div class="session-line"><span id="userTeamBadge"></span><button id="leaveBtn" class="text-button">Salir</button></div>
-            <nav class="tabs" aria-label="Secciones">
-                <button data-tab="sing" aria-current="page">🎤 Cantar</button>
-                <button data-tab="songs">🎵 Canciones</button>
-                <button data-tab="audience">👏 Público</button>
-            </nav>
-            <section id="sing" class="tab-panel">
-                <article class="card song-card"><p class="eyebrow" id="turnLabel">ESPERANDO EL SHOW</p><h1 id="currentSongTitle">Todavía no hay canciones</h1><p id="turnDescription">Añade una canción para entrar en la cola.</p></article>
-                <article class="card audio-card">
-                    <div class="card-heading"><h2>Tu micrófono</h2><span class="badge">Salida local</span></div>
-                    <p class="note">Empieza con poco volumen. Si aparece un pitido, pulsa Silenciar y baja el volumen. Un altavoz externo separado del micrófono puede mejorar la escucha.</p>
-                    <p id="micStatus" class="audio-status" role="status">Micrófono detenido</p>
-                    <p id="micMessage" class="note">Actívalo para comprobar tu voz antes de cantar.</p>
-                    <label for="inputLevel">Nivel de entrada</label><meter id="inputLevel" min="0" max="1" value="0">0</meter><p id="levelText" class="note">Sin captura</p>
-                    <button id="micBtn" class="primary full" type="button">Activar micrófono</button>
-                    <button id="cancelMicBtn" class="secondary full" type="button" hidden>Cancelar solicitud</button>
-                    <div id="audioControls" hidden>
-                        <div class="two-buttons"><button id="muteBtn" class="primary" type="button">Habilitar salida</button><button id="stopMicBtn" class="danger" type="button">Detener</button></div>
-                        <label for="gainControl">Ganancia de voz <output id="gainValue">15%</output></label>
-                        <input id="gainControl" type="range" min="0" max="60" value="15" step="1">
-                        <label for="voiceEffect">Efecto de voz</label><select id="voiceEffect"><option value="normal">Normal · sin eco</option><option value="reverb">Eco suave</option></select>
-                        <p class="note">La salida sigue el dispositivo elegido por tu navegador o sistema. Habilitarla no garantiza que estés escuchando.</p>
-                        <button id="heardBtn" class="secondary full" type="button" disabled>Confirmar: escucho mi voz</button>
-                        <p id="heardStatus" class="note" role="status">Escucha pendiente de comprobar.</p>
-                    </div>
-                    <button id="inviteBtn" class="secondary full" type="button" hidden>Invitar a cantar un dúo</button>
-                </article>
-                <p class="note centered">En una prueba puedes habilitar la salida aunque aún no sea tu turno. Al cambiar la canción, el micrófono se detiene.</p>
-            </section>
-            <section id="songs" class="tab-panel" hidden>
-                <article class="card"><p class="eyebrow">PREPARA TU MOMENTO</p><h2>Añade tu canción</h2>
-                    <form id="songForm" novalidate><label for="youtubeUrlInput">Enlace de YouTube</label><input id="youtubeUrlInput" type="text" inputmode="url" autocomplete="off" placeholder="https://youtu.be/…" aria-describedby="songFeedback" required><button id="addSongBtn" type="submit" class="primary full">Añadir a la cola</button></form>
-                    <p id="songFeedback" role="status" aria-live="polite" class="note">Pega el enlace y pulsa Añadir a la cola.</p>
-                    <p class="note">Comprueba que la versión incluya la letra o pista de karaoke.</p>
-                </article><article class="card"><h2>Próximos turnos</h2><ol id="songQueue" class="song-list"><li>La cola está vacía.</li></ol></article>
-            </section>
-            <section id="audience" class="tab-panel" hidden>
-                <article id="scoreboard" class="card scoreboard"><div>🔴 Rojo<strong id="redPoints">0</strong></div><span>VS</span><div>🔵 Azul<strong id="bluePoints">0</strong></div></article>
-                <article class="card"><h2>Anima al cantante</h2><p id="energyText" class="note">1000 reacciones disponibles</p><div class="two-buttons"><button id="clapBtn" class="secondary">👏 Aplaudir</button><button id="screamBtn" class="secondary">🗣️ Gritar</button></div><p id="chacalHint" class="note">Modo Fiesta: el Chacal anima sin interrumpir.</p><button id="chacalBtn" class="secondary full">🪈 Llamar al Chacal</button></article>
-                <article class="card"><h2>Reacciones</h2><div class="reactions">
-                    <button data-effect="confetti" aria-label="Confeti">🎉</button><button data-effect="fireworks" aria-label="Fuegos artificiales">🎆</button><button data-effect="❤️‍🔥" aria-label="Corazón en llamas">❤️‍🔥</button><button data-effect="🤩" aria-label="Estrella">🤩</button><button data-effect="🎸" aria-label="Guitarra">🎸</button><button id="booBtn" data-effect="abucheo" aria-label="Abucheo breve" hidden>Buuu</button><button data-effect="ovacion" aria-label="Ovación">👏</button>
-                </div></article>
-                <details class="card"><summary>Stickers animados</summary><form id="stickerForm"><label for="giphySearch">Buscar sticker</label><input id="giphySearch" placeholder="Ej. fiesta"><button class="secondary full">Buscar</button></form><div id="giphyResults" class="sticker-results"></div></details>
-                <button id="rankingBtn" class="secondary full">Mostrar ranking en la pantalla</button>
-            </section>
+      <header class="app-header">
+        <span class="brand">🔥 FireVoice</span
+        ><span id="connectionStatus" class="badge" role="status"
+          >Conectando…</span
+        >
+      </header>
+      <p
+        id="feedback"
+        class="feedback"
+        role="status"
+        aria-live="polite"
+        hidden
+      ></p>
+      <section id="loginSection" class="card welcome">
+        <p class="eyebrow">LA NOCHE ES TUYA</p>
+        <h1>Tu voz. Tu escenario.</h1>
+        <p>Únete al show, añade tu canción y canta desde el celular.</p>
+        <form id="joinForm">
+          <label for="nicknameInput">¿Cómo te presentamos?</label>
+          <input
+            id="nicknameInput"
+            placeholder="Tu nombre"
+            maxlength="40"
+            autocomplete="nickname"
+            required
+          />
+          <fieldset>
+            <legend>Elige tu equipo</legend>
+            <div class="team-options">
+              <label
+                ><input type="radio" name="team" value="red" checked /><span
+                  >🔴 Rojo</span
+                ></label
+              >
+              <label
+                ><input type="radio" name="team" value="blue" /><span
+                  >🔵 Azul</span
+                ></label
+              >
+            </div>
+          </fieldset>
+          <button id="enterBtn" class="primary full">Entrar al show</button>
+        </form>
+        <p class="note">
+          El micrófono pide permiso solo cuando lo activas. Tu voz sale por este
+          dispositivo; no se graba ni se envía a la pantalla.
+        </p>
+      </section>
+      <div id="mainSection" hidden>
+        <div class="session-line">
+          <span id="userTeamBadge"></span
+          ><button id="leaveBtn" class="text-button">Salir</button>
         </div>
-        <footer>FireVoice · Canta, comparte, disfruta</footer>
+        <nav class="tabs" aria-label="Secciones">
+          <button data-tab="sing" aria-current="page">🎤 Cantar</button>
+          <button data-tab="songs">🎵 Canciones</button>
+          <button data-tab="audience">👏 Público</button>
+        </nav>
+        <section id="sing" class="tab-panel">
+          <article class="card song-card">
+            <p class="eyebrow" id="turnLabel">ESPERANDO EL SHOW</p>
+            <h1 id="currentSongTitle">Todavía no hay canciones</h1>
+            <p id="turnDescription">
+              Añade una canción para entrar en la cola.
+            </p>
+          </article>
+          <article class="card audio-card">
+            <div class="card-heading">
+              <h2>Tu micrófono</h2>
+              <span class="badge">Salida local</span>
+            </div>
+            <p class="note">
+              Empieza con poco volumen. Si aparece un pitido, pulsa Silenciar y
+              baja el volumen. Un altavoz externo separado del micrófono puede
+              mejorar la escucha.
+            </p>
+            <p id="micStatus" class="audio-status" role="status">
+              Micrófono detenido
+            </p>
+            <p id="micMessage" class="note">
+              Actívalo para comprobar tu voz antes de cantar.
+            </p>
+            <label for="inputLevel">Nivel de entrada</label
+            ><meter id="inputLevel" min="0" max="1" value="0">0</meter>
+            <p id="levelText" class="note">Sin captura</p>
+            <button id="micBtn" class="primary full" type="button">
+              Activar micrófono
+            </button>
+            <button
+              id="cancelMicBtn"
+              class="secondary full"
+              type="button"
+              hidden
+            >
+              Cancelar solicitud
+            </button>
+            <div id="audioControls" hidden>
+              <div class="two-buttons">
+                <button id="muteBtn" class="primary" type="button">
+                  Habilitar salida</button
+                ><button id="stopMicBtn" class="danger" type="button">
+                  Detener
+                </button>
+              </div>
+              <label for="gainControl"
+                >Ganancia de voz <output id="gainValue">15%</output></label
+              >
+              <input
+                id="gainControl"
+                type="range"
+                min="0"
+                max="60"
+                value="15"
+                step="1"
+              />
+              <label for="voiceEffect">Efecto de voz</label
+              ><select id="voiceEffect">
+                <option value="normal">Normal · sin eco</option>
+                <option value="reverb">Eco suave</option>
+              </select>
+              <p class="note">
+                La salida sigue el dispositivo elegido por tu navegador o
+                sistema. Habilitarla no garantiza que estés escuchando.
+              </p>
+              <button
+                id="heardBtn"
+                class="secondary full"
+                type="button"
+                disabled
+              >
+                Confirmar: escucho mi voz
+              </button>
+              <p id="heardStatus" class="note" role="status">
+                Escucha pendiente de comprobar.
+              </p>
+            </div>
+            <button id="inviteBtn" class="secondary full" type="button" hidden>
+              Invitar a cantar un dúo
+            </button>
+          </article>
+          <p class="note centered">
+            En una prueba puedes habilitar la salida aunque aún no sea tu turno.
+            Al cambiar la canción, el micrófono se detiene.
+          </p>
+        </section>
+        <section id="songs" class="tab-panel" hidden>
+          <article class="card">
+            <p class="eyebrow">PREPARA TU MOMENTO</p>
+            <h2>Añade tu canción</h2>
+            <form id="songForm" novalidate>
+              <label for="youtubeUrlInput">Enlace de YouTube</label
+              ><input
+                id="youtubeUrlInput"
+                type="text"
+                inputmode="url"
+                autocomplete="off"
+                placeholder="https://youtu.be/…"
+                aria-describedby="songFeedback"
+                required
+              /><button id="addSongBtn" type="submit" class="primary full">
+                Añadir a la cola
+              </button>
+            </form>
+            <p id="songFeedback" role="status" aria-live="polite" class="note">
+              Pega el enlace y pulsa Añadir a la cola.
+            </p>
+            <p class="note">
+              Comprueba que la versión incluya la letra o pista de karaoke.
+            </p>
+          </article>
+          <article class="card">
+            <p class="eyebrow">COMPARTE EL ESCENARIO</p>
+            <h2>Duetos y desafíos</h2>
+            <form id="challengeForm" novalidate>
+              <label for="challengeTarget">Invitar a</label
+              ><select id="challengeTarget">
+                <option value="">Esperando participantes…</option></select
+              ><label for="challengeMode">Tipo de actuación</label
+              ><select id="challengeMode">
+                <option value="duet">Dueto · cantar juntos</option>
+                <option value="duel">Duelo · misma canción por turnos</option>
+                <option value="surprise">Desafío sorpresa</option></select
+              ><label for="challengeGenre">Género o tema</label
+              ><input
+                id="challengeGenre"
+                maxlength="40"
+                placeholder="Ej. Pop latino"
+              /><label for="challengeUrls">Enlaces de karaoke de YouTube</label
+              ><textarea
+                id="challengeUrls"
+                rows="3"
+                placeholder="Un enlace por línea"
+              ></textarea>
+              <p id="challengeHint" class="note">
+                Dueto y duelo: un enlace. Sorpresa: entre 2 y 5 enlaces
+                distintos; se elige uno al aceptar.
+              </p>
+              <button id="sendChallengeBtn" class="primary full">
+                Enviar invitación
+              </button>
+            </form>
+            <p id="challengeFeedback" class="note" role="status"></p>
+            <p class="note">
+              Nada interrumpe al cantante actual. Cada persona acepta desde su
+              celular; el dueto usa dos micrófonos locales.
+            </p>
+          </article>
+          <article class="card">
+            <h2>Próximos turnos</h2>
+            <ol id="songQueue" class="song-list">
+              <li>La cola está vacía.</li>
+            </ol>
+          </article>
+        </section>
+        <section id="audience" class="tab-panel" hidden>
+          <article id="scoreboard" class="card scoreboard">
+            <div>🔴 Rojo<strong id="redPoints">0</strong></div>
+            <span>VS</span>
+            <div>🔵 Azul<strong id="bluePoints">0</strong></div>
+          </article>
+          <article class="card">
+            <h2>Apoyo del público</h2>
+            <p class="note">
+              Un voto por actuación, sin voto propio. Los aplausos animan la
+              barra y no suman al ranking.
+            </p>
+            <button id="supportBtn" class="primary full" disabled>
+              Apoyar esta actuación
+            </button>
+            <p id="supportStatus" class="note" role="status">
+              Esperando actuación.
+            </p>
+          </article>
+          <article id="mobileDuelCard" class="card" hidden>
+            <h2 id="mobileDuelTitle">Duelo</h2>
+            <p id="mobileDuelStatus" role="status"></p>
+            <div id="duelVoteButtons" class="two-buttons"></div>
+          </article>
+          <article class="card">
+            <h2>Anima al cantante</h2>
+            <p id="energyText" class="note">1000 reacciones disponibles</p>
+            <div class="two-buttons">
+              <button id="clapBtn" class="secondary">👏 Aplaudir</button
+              ><button id="screamBtn" class="secondary">🗣️ Gritar</button>
+            </div>
+            <p id="chacalHint" class="note">
+              Modo Fiesta: el Chacal anima sin interrumpir.
+            </p>
+            <button id="chacalBtn" class="secondary full">
+              🪈 Llamar al Chacal
+            </button>
+          </article>
+          <article class="card">
+            <h2>Reacciones</h2>
+            <div class="reactions">
+              <button data-effect="confetti" aria-label="Confeti">🎉</button
+              ><button data-effect="fireworks" aria-label="Fuegos artificiales">
+                🎆</button
+              ><button data-effect="❤️‍🔥" aria-label="Corazón en llamas">
+                ❤️‍🔥</button
+              ><button data-effect="🤩" aria-label="Estrella">🤩</button
+              ><button data-effect="🎸" aria-label="Guitarra">🎸</button
+              ><button
+                id="booBtn"
+                data-effect="abucheo"
+                aria-label="Abucheo breve"
+                hidden
+              >
+                Buuu</button
+              ><button data-effect="ovacion" aria-label="Ovación">👏</button>
+            </div>
+          </article>
+          <details class="card">
+            <summary>Stickers animados</summary>
+            <form id="stickerForm">
+              <label for="giphySearch">Buscar sticker</label
+              ><input id="giphySearch" placeholder="Ej. fiesta" /><button
+                class="secondary full"
+              >
+                Buscar
+              </button>
+            </form>
+            <div id="giphyResults" class="sticker-results"></div>
+          </details>
+          <article class="card">
+            <h2>Favoritos del público</h2>
+            <p class="note">Apoyo medio · podio desde 2 actuaciones.</p>
+            <div id="mobileRanking"></div>
+            <h3>Duetos</h3>
+            <div id="mobileDuetRanking"></div>
+          </article>
+        </section>
+      </div>
+      <footer>FireVoice · Canta, comparte, disfruta</footer>
     </main>
-    <dialog id="inviteDialog"><h2>Invitar a un dúo</h2><div id="inviteList"></div><button id="closeInviteBtn" class="secondary full">Cerrar</button></dialog>
-    <dialog id="receiveDialog"><h2>Un dúo para el show</h2><p id="invitationText"></p><div class="two-buttons"><button id="acceptInviteBtn" class="primary">Aceptar</button><button id="rejectInviteBtn" class="secondary">Ahora no</button></div></dialog>
-</body>
+    <dialog id="challengeDialog">
+      <h2 id="challengeDialogTitle">Te invitan al escenario</h2>
+      <p id="challengeInvitationText"></p>
+      <p class="note">Se añade a la cola al aceptar. Puedes decir que no.</p>
+      <div class="two-buttons">
+        <button id="acceptChallengeBtn" class="primary">Aceptar</button
+        ><button id="rejectChallengeBtn" class="secondary">Ahora no</button>
+      </div>
+      <p id="challengeDialogStatus" role="status"></p>
+    </dialog>
+    <dialog id="inviteDialog">
+      <h2>Invitar a un dúo</h2>
+      <div id="inviteList"></div>
+      <button id="closeInviteBtn" class="secondary full">Cerrar</button>
+    </dialog>
+    <dialog id="receiveDialog">
+      <h2>Un dúo para el show</h2>
+      <p id="invitationText"></p>
+      <div class="two-buttons">
+        <button id="acceptInviteBtn" class="primary">Aceptar</button
+        ><button id="rejectInviteBtn" class="secondary">Ahora no</button>
+      </div>
+    </dialog>
+  </body>
 </html>

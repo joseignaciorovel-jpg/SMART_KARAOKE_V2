@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
-for (const file of ['server.js', 'public/js/audio-engine.js', 'public/js/mobile.js']) {
+for (const file of ['server.js', 'public/js/audio-engine.js', 'public/js/mobile.js', 'public/js/show-party.js', 'lib/party.js', 'lib/session-store.js']) {
     new vm.Script(fs.readFileSync(file, 'utf8'), { filename: file });
 }
 const html = fs.readFileSync('public/index.html', 'utf8');

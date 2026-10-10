@@ -101,3 +101,36 @@ test('host controls Chacal modes; Fiesta never pauses and Competition emits a so
     const config = await state(host); assert.equal(config.chacalMode, 'competencia'); assert.equal(config.allowBoo, true);
     await ack(host, 'set-chacal-options', {mode:'fiesta', allowBoo:false});
 });
+
+test('challenge consent, song-bound support, separate duet permissions and consecutive duel voting run on real sockets',async()=>{
+    const host=await connect(),a=await connect(),b=await connect(),c=await connect();
+    await ack(host,'authenticate-host',{key:process.env.HOST_KEY});
+    const sa=await join(a,{nickname:'Ana'}),sb=await join(b,{nickname:'Bea'});await join(c,{nickname:'Público'});
+    host.emit('clear-queue');await state(host);
+    while((await state(host)).currentSong){host.emit('skip-song');await state(host);}
+    const invitation=event(b,'challenge-invitation');
+    assert.equal((await ack(a,'create-challenge',{targetId:sb.participantId,mode:'duel',genre:'Pop',urls:['youtu.be/abcdefghijk']})).ok,true);
+    const invite=await invitation;assert.equal(invite.candidates,undefined);assert.equal((await state(host)).currentSong,null);
+    assert.equal((await ack(c,'respond-challenge',{id:invite.id,accept:true})).ok,false);
+    assert.equal((await ack(b,'respond-challenge',{id:invite.id,accept:true})).ok,true);
+    let screen=await state(host);assert.equal(screen.currentSong.requesterId,sa.participantId);assert.equal(screen.queue[0].requesterId,sb.participantId);assert.equal(screen.queue[0].videoId,screen.currentSong.videoId);
+    assert.equal((await ack(a,'support-performance',{songId:screen.currentSong.id})).ok,false);
+    assert.equal((await ack(c,'support-performance',{songId:'old-song'})).ok,false);
+    assert.equal((await ack(c,'support-performance',{songId:screen.currentSong.id})).ok,false);
+    host.emit('finish-song',{songId:screen.currentSong.id});screen=await state(host);
+    const leg2=screen.currentSong.id;host.emit('finish-song',{songId:invite.id});assert.equal((await state(host)).currentSong.id,leg2);
+    host.emit('finish-song',{songId:leg2});screen=await state(host);const duel=screen.duels.at(-1);assert.equal(duel.status,'voting');assert.equal(duel.counts,null);
+    assert.equal((await ack(a,'vote-duel',{duelId:duel.id,choice:sa.participantId})).ok,false);
+    assert.equal((await ack(c,'vote-duel',{duelId:duel.id,choice:sa.participantId})).ok,true);
+    assert.equal((await ack(c,'vote-duel',{duelId:duel.id,choice:sb.participantId})).ok,false);
+    await ack(host,'close-duel-vote',{id:duel.id});assert.equal((await state(host)).duels.at(-1).total,1);
+    const i2=event(b,'challenge-invitation');await ack(a,'create-challenge',{targetId:sb.participantId,mode:'duet',genre:'Pop',urls:['youtu.be/abcdefghijk']});const duetInvite=await i2;
+    await ack(b,'respond-challenge',{id:duetInvite.id,accept:true});screen=await state(host);assert.deepEqual(screen.currentSong.singerIds,[sa.participantId,sb.participantId]);assert.ok(screen.coSingerIds.includes(sb.participantId));
+    assert.equal((await ack(b,'support-performance',{songId:screen.currentSong.id})).ok,false);
+    await ack(c,'support-performance',{songId:screen.currentSong.id});host.emit('finish-song',{songId:screen.currentSong.id});screen=await state(host);assert.equal(screen.duetRanking.length,1);assert.equal(screen.ranking.length,0);
+    const i3=event(b,'challenge-invitation');await ack(a,'create-challenge',{targetId:sb.participantId,mode:'surprise',genre:'Rock',urls:['youtu.be/abcdefghijk','youtu.be/12345678901']});const surprise=await i3;assert.equal(surprise.candidates,undefined);
+    await ack(b,'respond-challenge',{id:surprise.id,accept:false});assert.equal((await state(host)).currentSong,null);
+    assert.equal((await ack(c,'set-lighting',{mode:'off',intensity:0})).ok,false);await ack(host,'set-lighting',{mode:'party',intensity:45});assert.equal((await state(host)).lighting.mode,'party');
+    const exported=await new Promise((resolve,reject)=>host.timeout(2000).emit('export-session',(error,result)=>error?reject(error):resolve(result)));assert.equal(exported.ok,true);assert.ok(exported.data.sessions.some(s=>s.token===sa.sessionToken));
+    assert.equal((await ack(c,'import-session',exported.data)).ok,false);assert.equal((await ack(host,'import-session',exported.data)).ok,false);
+});

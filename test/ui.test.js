@@ -74,6 +74,7 @@ test('screen host login enables labeled controls and hides queue actions again o
         for (const [, body] of fs.readFileSync('public/index.html', 'utf8').matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
             if (body.trim()) window.eval(body);
         }
+        window.eval(fs.readFileSync('public/js/show-party.js','utf8'));
         const $ = id => window.document.getElementById(id);
         assert.equal($('hostControls').hidden, true);
         $('hostKey').value = 'test'; $('hostForm').dispatchEvent(new window.Event('submit', { cancelable: true }));
@@ -108,4 +109,19 @@ test('empty and non-YouTube song input display a message instead of silently blo
         assert.match(h.$('songFeedback').textContent, /debe ser de YouTube/);
         assert.ok(!h.socket.sent.some(item => item.event === 'add-song'));
     } finally { h.dom.window.close(); }
+});
+
+test('mobile challenge form requires consent, renders invitations safely, and disables duplicate / self duel votes',()=>{
+    const h=mobile();try{
+        h.socket.fire('nickname-set',{nickname:'Ana',team:'red',participantId:'a',sessionToken:'private'});
+        const duel={id:'d',names:['Bea','Leo'],singers:['b','c'],status:'voting',deadline:Date.now()+30000,eligible:['a'],voted:[],total:0};
+        const state={currentSong:{id:'s',requesterId:'b',title:'Tema',requester:'Bea'},queue:[],participantList:[{id:'a',name:'Ana'},{id:'b',name:'Bea'}],support:{songId:'s',eligible:['a'],votes:[]},duels:[duel]};
+        h.socket.fire('state-update',state);h.$('supportBtn').click();assert.equal(h.socket.sent.at(-1).event,'support-performance');
+        h.socket.fire('state-update',{...state,support:{...state.support,votes:['a']}});assert.equal(h.$('supportBtn').disabled,true);
+        h.$('challengeTarget').value='b';h.$('challengeUrls').value='youtu.be/abcdefghijk';h.$('sendChallengeBtn').click();assert.equal(h.socket.sent.at(-1).event,'create-challenge');
+        h.socket.fire('challenge-invitation',{id:'invite',fromName:'<img src=x>',mode:'surprise',genre:'Pop',expiresAt:Date.now()+120000});assert.equal(h.$('challengeDialog').open,true);assert.equal(h.$('challengeInvitationText').querySelector('img'),null);h.$('acceptChallengeBtn').click();assert.equal(h.socket.sent.at(-1).payload.accept,true);
+        h.$('duelVoteButtons').children[0].click();assert.equal(h.socket.sent.at(-1).event,'vote-duel');
+        h.socket.fire('state-update',{...state,duels:[{...duel,voted:['a'],total:1}]});assert.equal(h.$('duelVoteButtons').children[0].disabled,true);
+        h.socket.fire('state-update',{...state,duels:[{...duel,singers:['a','b'],eligible:[]}]});assert.equal(h.$('duelVoteButtons').children[0].disabled,true);
+    }finally{h.dom.window.close();}
 });

@@ -3,3 +3,8 @@ node_modules/
 .env.*
 !.env.example
 coverage/
+# Private party snapshots and local persistent storage
+session.json
+session.json.previous
+session.json.tmp
+.session-data/

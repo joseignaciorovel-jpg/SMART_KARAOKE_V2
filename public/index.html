@@ -64,6 +64,8 @@
         <aside id="rightColumn" class="right-column" aria-label="Turnos y participación">
             <article class="next-card panel"><p class="eyebrow">SIGUE DESPUÉS <span class="next-number">01</span></p><h2 id="nextSinger">Tu lugar en el escenario</h2><p id="nextTitle">Añade una canción para reservar tu turno.</p></article>
             <article class="queue-section panel"><div class="section-heading"><h2>Próximos turnos</h2><span id="queueCount" class="count-pill">0</span></div><div id="queueList"></div></article>
+            <article class="panel ranking-card"><div class="section-heading"><h2>Favoritos del público</h2><button id="showRankingBtn" class="text-button">Ver podio ↗</button></div><p class="muted">Apoyo medio por actuación · no mide afinación</p><div id="liveRanking"></div><p class="muted">Podio desde 2 actuaciones. Duetos por separado.</p></article>
+            <article class="panel duel-card" id="duelCard" hidden><p class="eyebrow">DUELO</p><h2 id="duelTitle"></h2><p id="duelStatus" role="status"></p><div id="duelResult"></div><button id="closeDuelBtn" class="secondary" hidden>Cerrar votación</button></article>
             <article class="qr-area panel"><img id="qrImage" class="qr-image" alt="QR para unirse" hidden><div><h2>Únete al show</h2><p>Escanea desde tu celular</p><p class="qr-status">Preparando código QR…</p><a class="join-link" href="/join.html">Abrir control ↗</a></div></article>
             <p class="sidebar-note">Aplausos, gritos y reacciones animan el escenario.</p>
         </aside>
@@ -81,10 +83,10 @@
 
 <div id="fullscreenOverlay"></div>
 <div id="finalRankingOverlay">
-    <h1 style="font-size: 3rem; margin-bottom: 10px;">🏆 PODIO KARAOKE 🏆</h1>
-    <div id="podiumContainer" class="ranking-podium"></div>
+    <h1 style="font-size: 3rem; margin-bottom: 10px;">🏆 Favoritos del público</h1>
+    <p class="ranking-explanation">Promedio de apoyo por actuación · mínimo 2 actuaciones · no evalúa calidad vocal</p><div id="podiumContainer" class="ranking-podium"></div>
     <div id="restRankingContainer" class="rest-list" style="display: none;"></div>
-    <button class="restart-btn" onclick="location.reload()">✨ Reiniciar Fiesta ✨</button>
+    <div id="duetPodium"></div>
     <button class="close-ranking" onclick="document.getElementById('finalRankingOverlay').style.display='none'">Cerrar</button>
 </div>
 
@@ -122,12 +124,15 @@
 <dialog id="hostDialog" aria-labelledby="hostDialogTitle"><div class="dialog-heading"><h2 id="hostDialogTitle">Tu cabina de anfitrión</h2><button id="closeHostBtn" class="text-button" aria-label="Cerrar controles del anfitrión">✕</button></div><p class="muted">Controla el show desde esta pantalla.</p>
     <form id="hostForm"><label for="hostKey">Clave del anfitrión</label><input id="hostKey" type="password" autocomplete="off" required><button type="submit" class="primary">Habilitar controles</button><p class="muted">Usa la clave HOST_KEY del servicio. No es la contraseña de Railway.</p></form>
     <p id="hostStatus" role="status">Controles bloqueados</p>
-    <section id="hostSettings" hidden><label for="chacalMode">Chacal de la Zampoña</label><select id="chacalMode"><option value="fiesta">Fiesta · reacción sin interrumpir</option><option value="competencia">Competencia · pausa con 50 % de votos</option></select><p class="muted">En competencia, el Chacal pausa hasta 5 segundos y continúa si la canción estaba sonando.</p><label class="check-label"><input id="allowBoo" type="checkbox"> Permitir abucheo breve</label><label for="effectsVolume">Volumen de los efectos <output id="effectsVolumeValue">35 %</output></label><input id="effectsVolume" type="range" min="0" max="70" value="35"><p class="muted">Este volumen afecta solo esta pantalla, no el micrófono del celular.</p><div class="host-sounds"><button class="secondary" data-host-sound="aplausos">Aplausos</button><button class="secondary" data-host-sound="ovacion">Ovación</button><button class="secondary" data-host-sound="abucheo">Abucheo</button></div><button id="modeToggleBtn" class="secondary" hidden>Modo: Equipos</button><button id="clearBtn" class="danger">Vaciar cola y puntajes</button><button id="lockHostBtn" class="text-button">Bloquear controles</button></section>
+    <section id="hostSettings" hidden><fieldset class="host-feature"><legend>Iluminación del escenario</legend><label for="lightingMode">Ambiente</label><select id="lightingMode"><option value="off">Apagado</option><option value="classic">Clásico · luz cálida</option><option value="concert">Concierto · azul y violeta</option><option value="party">Fiesta · colores suaves</option></select><label for="lightingIntensity">Intensidad <output id="lightingValue">35 %</output></label><input id="lightingIntensity" type="range" min="0" max="70" value="35"><p class="muted">Luz en los bordes, sin tapar el video. Respeta la preferencia de movimiento reducido.</p></fieldset>
+    <fieldset class="host-feature"><legend>Conservar la fiesta</legend><p id="persistenceStatus" role="status"></p><button id="backupBtn" class="secondary">Descargar copia de la sesión</button><label for="restoreFile">Restaurar copia JSON</label><input id="restoreFile" type="file" accept=".json,application/json"><p class="muted">La copia contiene accesos de participantes: guárdala de forma privada. Para restaurarla, los participantes deben salir del show.</p><p id="backupStatus" role="status"></p></fieldset>
+    <button id="finishSongBtn" class="primary">Finalizar actuación y pasar a la siguiente</button><p class="muted">Finalizar registra el apoyo. Siguiente omite la actuación y la excluye del ranking.</p><label for="chacalMode">Chacal de la Zampoña</label><select id="chacalMode"><option value="fiesta">Fiesta · reacción sin interrumpir</option><option value="competencia">Competencia · pausa con 50 % de votos</option></select><p class="muted">En competencia, el Chacal pausa hasta 5 segundos y continúa si la canción estaba sonando.</p><label class="check-label"><input id="allowBoo" type="checkbox"> Permitir abucheo breve</label><label for="effectsVolume">Volumen de los efectos <output id="effectsVolumeValue">35 %</output></label><input id="effectsVolume" type="range" min="0" max="70" value="35"><p class="muted">Este volumen afecta solo esta pantalla, no el micrófono del celular.</p><div class="host-sounds"><button class="secondary" data-host-sound="aplausos">Aplausos</button><button class="secondary" data-host-sound="ovacion">Ovación</button><button class="secondary" data-host-sound="abucheo">Abucheo</button></div><button id="modeToggleBtn" class="secondary" hidden>Modo: Equipos</button><button id="clearBtn" class="danger">Vaciar cola y puntajes</button><button id="lockHostBtn" class="text-button">Bloquear controles</button></section>
 </dialog>
 
 <script>
     // ---------- CONEXIÓN SOCKET Y VARIABLES GLOBALES ----------
     const socket = io();
+    window.firevoiceShow={socket,getIsHost:()=>isHost};
     let isHost = false, hostKey = '', lastSongId = null;
     function setHostAccess(enabled) {
         isHost = enabled;
@@ -217,18 +222,18 @@
             videoId: '',
             playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'fs': 0, 'origin': window.location.origin },
             events: {
-                'onReady': (e) => { 
-                    e.target.unMute(); 
-                    e.target.setVolume(100); 
-                    if (currentVideoId) ytPlayer.loadVideoById(currentVideoId); 
+                'onReady': (e) => {
+                    e.target.unMute();
+                    e.target.setVolume(100);
+                    if (currentVideoId) ytPlayer.loadVideoById(currentVideoId);
                 },
-                'onStateChange': (e) => { 
+                'onStateChange': (e) => {
                     if (e.data === 1) {
                         document.getElementById('playerMessage').hidden = true;
                         e.target.unMute();
                         e.target.setVolume(100);
                     }
-                    if (e.data === 0 && isHost) socket.emit('skip-song');
+                    if (e.data === 0 && isHost && lastSongId) socket.emit('finish-song',{songId:lastSongId});
                 },
                 'onError': (e) => {
                     document.getElementById('playerMessage').hidden = false;
@@ -267,6 +272,7 @@
 
     // ---------- SOCKET: ESTADO, COLA, CANCIONES ----------
     socket.on('state-update', (state) => {
+        const songChanged=(state.currentSong?.id || null)!==lastSongId;
         currentQueue = state.queue || [];
         if ((state.currentSong?.id || null) !== lastSongId) cancelChacalPause(false);
         if (state.chacalMode) { if (state.chacalMode !== chacalMode) cancelChacalPause(true); chacalMode = state.chacalMode; document.getElementById('chacalMode').value = chacalMode; }
@@ -276,14 +282,14 @@
         updateQueue(state.queue);
         updateNowPlaying(state.currentSong);
         updateCinemaNextSong();
-        
+
         if (state.teamScores) {
             document.getElementById('scoreRed').innerText = state.teamScores.red || 0;
             document.getElementById('scoreBlue').innerText = state.teamScores.blue || 0;
         }
         if (state.currentSongClaps !== undefined) updateApplauseMeter(state.currentSongClaps);
         if (state.currentSong?.id !== lastSongId) { lastSongId = state.currentSong?.id || null; window.hasStarted = false; window.hasEnded = false; }
-        
+
         if (state.gameMode !== undefined) {
             currentGameMode = state.gameMode;
             const btn = document.getElementById('modeToggleBtn');
@@ -295,7 +301,7 @@
 
         if (state.currentSong) {
             const newVideoId = state.currentSong.videoId;
-            if (newVideoId !== currentVideoId) {
+            if (newVideoId !== currentVideoId || songChanged) {
                 if (currentVideoId === null) {
                     currentVideoId = newVideoId;
                     if (ytPlayer && ytPlayer.loadVideoById) ytPlayer.loadVideoById(currentVideoId);
@@ -415,12 +421,12 @@
         if (effect === 'abucheo') { playBoo(); showEffectNotification('Abucheo breve', from); }
         else if (sonidos[effect]) {
             reproducirEfecto(sonidos[effect]);
-        } 
+        }
         else if (effect === 'confetti' || effect === 'fireworks') {
             showEffectNotification(effect, from);
             if (effect === 'confetti') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 10000 });
             if (effect === 'fireworks') confetti({ particleCount: 300, spread: 100, startVelocity: 25, zIndex: 10000 });
-        } 
+        }
         else {
             spawnEmoji(effect);
         }
@@ -433,11 +439,11 @@
         let rankingArray = (data && data.individual) ? data.individual : (Array.isArray(data) ? data : []);
         if (!rankingArray.length) {
             document.getElementById('finalRankingOverlay').style.display = 'flex';
-            document.getElementById('podiumContainer').innerHTML = '<p style="grid-column:span 3; text-align:center;">✨ Aún no hay puntuaciones ✨</p>';
+            document.getElementById('podiumContainer').innerHTML = '<p style="grid-column:span 3; text-align:center;">Completa al menos dos actuaciones con público para entrar al podio.</p>';
             document.getElementById('restRankingContainer').style.display = 'none';
             return;
         }
-        rankingArray.sort((a,b) => b.score - a.score);
+        rankingArray = rankingArray.filter(user=>!user.provisional);
         const top3 = rankingArray.slice(0,3);
         const rest = rankingArray.slice(3);
         const podiumDiv = document.getElementById('podiumContainer');
@@ -450,7 +456,7 @@
             card.innerHTML = `
                 <div class="podium-icon">${icons[idx]}</div>
                 <div class="podium-name">${escapeHtml(user.name)}</div>
-                <div class="podium-score">🎤 ${user.score} pts</div>
+                <div class="podium-score">${user.score}% · ${user.performances || 0} actuaciones</div>
             `;
             podiumDiv.appendChild(card);
         });
@@ -458,7 +464,7 @@
         if (rest.length) {
             restDiv.style.display = 'block';
             restDiv.innerHTML = `<h3 style="text-align:center;">🎵 Más participantes 🎵</h3>` +
-                rest.map((user, i) => `<div class="rest-item"><span>${i+4}. ${escapeHtml(user.name)}</span><span>${user.score} pts</span></div>`).join('');
+                rest.map((user, i) => `<div class="rest-item"><span>${i+4}. ${escapeHtml(user.name)}</span><span>${user.score}%</span></div>`).join('');
         } else {
             restDiv.style.display = 'none';
         }
@@ -466,7 +472,7 @@
         confetti({ particleCount: 600, spread: 180, origin: { y: 0.6 }, zIndex: 30001 });
         try {
             const winner = top3[0];
-            const utterance = new SpeechSynthesisUtterance(`¡Felicidades al ganador! ${winner.name} con ${winner.score} puntos.`);
+            const utterance = new SpeechSynthesisUtterance(`¡Favorito del público! ${winner.name}, con ${winner.score} por ciento de apoyo medio.`);
             utterance.rate = 0.9;
             window.speechSynthesis.speak(utterance);
         } catch (err) {}
@@ -487,6 +493,7 @@
             const number = document.createElement('span'); number.className = 'queue-number'; number.textContent = String(index + (isHost ? 1 : 2)).padStart(2, '0');
             const text = document.createElement('div'); text.className = 'queue-copy';
             const name = document.createElement('strong'); name.textContent = song.requester;
+            if(song.kind && song.kind!=='solo'){const badge=document.createElement('span');badge.className='turn-kind';badge.textContent={duet:'Dueto',duel:'Duelo',surprise:'Sorpresa'}[song.kind]||'';text.append(badge);}
             const title = document.createElement('small'); title.textContent = song.title;
             text.append(name, title); item.append(number, text);
             if (isHost) { const remove = document.createElement('button'); remove.className = 'text-button'; remove.textContent = '✕'; remove.setAttribute('aria-label', 'Eliminar canción de la cola'); remove.onclick = () => socket.emit('remove-song', song.id); item.append(remove); }
@@ -510,7 +517,7 @@
     document.getElementById('prevBtn').onclick = () => socket.emit('prev-song');
     document.getElementById('skipBtn').onclick = () => socket.emit('skip-song');
     document.getElementById('clearBtn').onclick = () => { if(confirm('¿Vaciar cola y puntajes?')) socket.emit('clear-queue'); };
-    
+
     // Two independent display controls: fullscreen preserves layout; stage focuses video.
     let immersiveTimer;
     async function toggleFullscreen() {
@@ -631,7 +638,7 @@
             const state = ytPlayer.getPlayerState();
             const currentTime = ytPlayer.getCurrentTime();
             const duration = ytPlayer.getDuration();
-            
+
             // Brief end-of-song applause; no random crowd audio over singing.
             if (state === 1 && duration && (duration - currentTime) < 3 && !window.hasEnded) {
                 reproducirEfecto('aplausos.wav');
@@ -667,24 +674,24 @@
         const percentDisplay = document.getElementById('percentDisplay');
         const reactionEmojiSpan = document.getElementById('reactionEmoji');
         const reactionMsgSpan = document.getElementById('reactionMsg');
-        
+
         if (rgbLayer) rgbLayer.style.height = percent + '%';
         document.getElementById('slimMeter').setAttribute('aria-valuenow', String(Math.floor(percent)));
         if (percentDisplay) percentDisplay.innerText = Math.floor(percent) + '%';
-        
+
         if (percent >= 50) {
             rgbLayer.classList.add('high-energy');
         } else {
             rgbLayer.classList.remove('high-energy');
         }
-        
+
         let emoji = "", msg = "";
         if (percent < 15) { emoji = "👏"; msg = "Anima al cantante con tus reacciones."; }
         else if (percent < 35) { emoji = "👏🎤✨"; msg = "Pequeños aplausos... ¡más energía!"; }
         else if (percent < 55) { emoji = "🔥👏🎸"; msg = "¡El público comienza a vibrar!"; }
         else if (percent < 75) { emoji = "🤘💥⚡"; msg = "¡ESTALLIDO! Sigue así 🎉🔥"; }
         else { emoji = "💢🌟🎉🤯💥"; msg = "¡ÉXTASIS TOTAL! ¡PÚBLICO ENLOQUECIDO!"; }
-        
+
         if (reactionEmojiSpan) reactionEmojiSpan.innerText = emoji;
         if (reactionMsgSpan) reactionMsgSpan.innerText = msg;
     }
@@ -810,5 +817,6 @@
     });
 
 </script>
+<script src="/js/show-party.js"></script>
 </body>
 </html>
