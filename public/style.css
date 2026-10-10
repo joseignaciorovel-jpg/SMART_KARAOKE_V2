@@ -1159,3 +1159,50 @@ body[data-lighting="party"] .performance::before {
     animation: none;
   }
 }
+
+/* Keep the join code and turn list prominent beside the new ranking. */
+.right-column {
+  gap: 14px;
+}
+.next-card {
+  padding: 20px;
+}
+.next-card h2 {
+  font-size: 24px;
+  margin: 10px 0;
+}
+.next-card > p:last-child {
+  font-size: 13px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ranking-card .section-heading {
+  align-items: flex-start;
+}
+.ranking-card .section-heading h2 {
+  font-size: 17px;
+}
+.ranking-card .text-button {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.ranking-card > .muted {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ranking-card .ranking-row {
+  padding: 8px 0;
+  font-size: 14px;
+}
+.ranking-card .ranking-row small {
+  font-size: 11px;
+}
+.right-column .qr-area {
+  padding: 16px;
+  gap: 14px;
+}
+.right-column .qr-area .qr-image {
+  width: 88px;
+}
