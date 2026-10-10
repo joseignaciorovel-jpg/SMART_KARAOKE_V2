@@ -30,10 +30,12 @@ function mobile() {
         setGain() {}
         setEffect(value) { this.effect = value; }
     };
+    window.eval(fs.readFileSync('public/js/wake-lock.js', 'utf8'));
+    window.eval(fs.readFileSync('public/js/sound-library.js', 'utf8'));
     window.eval(fs.readFileSync('public/js/mobile.js', 'utf8'));
     return { dom, window, socket, engine, $: id => window.document.getElementById(id) };
 }
-test('mobile tabs, session, real-state labels, output confirmation, song change and disconnect cleanup', async () => {
+test('mobile tabs, session, real-state labels, saved preferences and continuous local audio across songs and disconnects', async () => {
     const h = mobile();
     try {
         h.socket.fire('connect');
@@ -46,13 +48,17 @@ test('mobile tabs, session, real-state labels, output confirmation, song change 
         assert.equal(h.$('songs').hidden, false); assert.equal(h.$('sing').hidden, true);
         h.window.document.querySelector('[data-tab=sing]').click();
         h.$('micBtn').click(); assert.equal(h.$('audioControls').hidden, false);
-        assert.equal(h.$('heardBtn').disabled, true);
-        h.$('muteBtn').click(); await Promise.resolve();
-        assert.equal(h.$('micStatus').textContent, 'Salida habilitada'); assert.equal(h.$('heardBtn').disabled, false);
-        h.$('heardBtn').click(); assert.match(h.$('heardStatus').textContent, /confirmada por ti/);
+        assert.equal(h.$('outputSwitch').checked,false);
+        h.$('outputSwitch').checked=true;h.$('outputSwitch').dispatchEvent(new h.window.Event('change'));await Promise.resolve();
+        assert.equal(h.$('micStatus').textContent,'Tu micrófono está sonando');
+        h.$('echoSwitch').checked=true;h.$('echoSwitch').dispatchEvent(new h.window.Event('change'));
+        h.$('gainControl').value=25;h.$('gainControl').dispatchEvent(new h.window.Event('input'));
+        assert.equal(JSON.parse(h.window.localStorage.getItem('firevoice-mic-preferences')).gain,25);
         h.socket.fire('state-update', { ...state, currentSong: { ...state.currentSong, id: 'song-2', requesterId: 'other' } });
-        assert.equal(h.engine.state, 'idle'); assert.equal(h.$('inviteBtn').hidden, true);
-        h.socket.disconnect(); assert.equal(h.$('micBtn').disabled, true); assert.match(h.$('connectionStatus').textContent, /Sin conexión/);
+        assert.equal(h.engine.state,'output');assert.equal(h.engine.effect,'reverb');
+        h.socket.disconnect();assert.equal(h.engine.stops,0);assert.match(h.$('connectionStatus').textContent,/Sin conexión/);
+        h.window.document.dispatchEvent(new h.window.Event('visibilitychange'));assert.equal(h.engine.stops,0);
+        h.$('stopMicBtn').click();await Promise.resolve();await Promise.resolve();assert.equal(h.engine.state,'idle');
         assert.ok(!h.socket.sent.some(item => item.event === 'mic-audio'));
     } finally { h.dom.window.close(); }
 });
@@ -69,6 +75,7 @@ test('screen host login enables labeled controls and hides queue actions again o
     const dom = new JSDOM(fs.readFileSync('public/index.html', 'utf8'), { url: 'https://firevoice.test/', runScripts: 'outside-only' });
     const socket = socketMock(), window = dom.window;
     window.io = () => socket; window.confetti = () => {};
+    window.eval(fs.readFileSync('public/js/sound-library.js','utf8'));
     window.fetch = async () => ({ ok: true, json: async () => ({ qrImage: 'data:image/png;base64,' }) });
     try {
         for (const [, body] of fs.readFileSync('public/index.html', 'utf8').matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
@@ -124,4 +131,18 @@ test('mobile challenge form requires consent, renders invitations safely, and di
         h.socket.fire('state-update',{...state,duels:[{...duel,voted:['a'],total:1}]});assert.equal(h.$('duelVoteButtons').children[0].disabled,true);
         h.socket.fire('state-update',{...state,duels:[{...duel,singers:['a','b'],eligible:[]}]});assert.equal(h.$('duelVoteButtons').children[0].disabled,true);
     }finally{h.dom.window.close();}
+});
+
+test('joining is free and optional teams appear only when the host enables them',()=>{
+ const h=mobile();try{
+ h.$('nicknameInput').value='Ana';h.$('joinForm').dispatchEvent(new h.window.Event('submit',{cancelable:true}));
+ assert.equal(h.socket.sent.find(x=>x.event==='join-team').payload.team,null);
+ h.socket.fire('nickname-set',{nickname:'Ana',team:null,participantId:'a',sessionToken:'private'});
+ h.socket.fire('state-update',{gameMode:'arcade',queue:[]});assert.equal(h.$('teamChoice').hidden,true);
+ h.socket.fire('state-update',{gameMode:'teams',queue:[]});assert.equal(h.$('teamChoice').hidden,false);
+ h.window.document.querySelector('[data-team=red]').click();assert.deepEqual(JSON.parse(JSON.stringify(h.socket.sent.at(-1).payload)),{team:'red'});
+ h.socket.fire('team-chosen',{team:'red'});assert.match(h.$('userTeamBadge').textContent,/Rojo/);
+ h.socket.fire('team-chosen',{team:null});assert.match(h.$('userTeamBadge').textContent,/libre/);
+ assert.equal(h.$('soundLibrary').children.length,6);
+ }finally{h.dom.window.close();}
 });

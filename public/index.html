@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js"></script><script src="/js/sound-library.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
 
 </head>
@@ -127,7 +127,7 @@
     <p id="hostStatus" role="status">Controles bloqueados</p>
     <section id="hostSettings" hidden><fieldset class="host-feature"><legend>Iluminación del escenario</legend><label for="lightingMode">Ambiente</label><select id="lightingMode"><option value="off">Apagado</option><option value="classic">Clásico · luz cálida</option><option value="concert">Concierto · azul y violeta</option><option value="party">Fiesta · colores suaves</option></select><label for="lightingIntensity">Intensidad <output id="lightingValue">35 %</output></label><input id="lightingIntensity" type="range" min="0" max="70" value="35"><p class="muted">Luz en los bordes, sin tapar el video. Respeta la preferencia de movimiento reducido.</p></fieldset>
     <fieldset class="host-feature"><legend>Conservar la fiesta</legend><p id="persistenceStatus" role="status"></p><button id="backupBtn" class="secondary">Descargar copia de la sesión</button><label for="restoreFile">Restaurar copia JSON</label><input id="restoreFile" type="file" accept=".json,application/json"><p class="muted">La copia contiene accesos de participantes: guárdala de forma privada. Para restaurarla, los participantes deben salir del show.</p><p id="backupStatus" role="status"></p></fieldset>
-    <button id="finishSongBtn" class="primary">Finalizar actuación y pasar a la siguiente</button><p class="muted">Finalizar registra el apoyo. Siguiente omite la actuación y la excluye del ranking.</p><label for="chacalMode">Chacal de la Zampoña</label><select id="chacalMode"><option value="fiesta">Fiesta · reacción sin interrumpir</option><option value="competencia">Competencia · pausa con 50 % de votos</option></select><p class="muted">En competencia, el Chacal pausa hasta 5 segundos y continúa si la canción estaba sonando.</p><label class="check-label"><input id="allowBoo" type="checkbox"> Permitir abucheo breve</label><label for="effectsVolume">Volumen de los efectos <output id="effectsVolumeValue">35 %</output></label><input id="effectsVolume" type="range" min="0" max="70" value="35"><p class="muted">Este volumen afecta solo esta pantalla, no el micrófono del celular.</p><div class="host-sounds"><button class="secondary" data-host-sound="aplausos">Aplausos</button><button class="secondary" data-host-sound="ovacion">Ovación</button><button class="secondary" data-host-sound="abucheo">Abucheo</button></div><button id="modeToggleBtn" class="secondary" hidden>Modo: Equipos</button><button id="clearBtn" class="danger">Vaciar cola y puntajes</button><button id="lockHostBtn" class="text-button">Bloquear controles</button></section>
+    <button id="finishSongBtn" class="primary">Finalizar actuación y pasar a la siguiente</button><p class="muted">Finalizar registra el apoyo. Siguiente omite la actuación y la excluye del ranking.</p><label for="chacalMode">Chacal de la Zampoña</label><select id="chacalMode"><option value="fiesta">Fiesta · reacción sin interrumpir</option><option value="competencia">Competencia · pausa con 50 % de votos</option></select><p class="muted">En competencia, el Chacal pausa hasta 5 segundos y continúa si la canción estaba sonando.</p><label class="check-label"><input id="allowBoo" type="checkbox"> Permitir abucheo breve</label><label for="effectsVolume">Volumen de los efectos <output id="effectsVolumeValue">35 %</output></label><input id="effectsVolume" type="range" min="0" max="70" value="35"><p class="muted">Este volumen afecta solo esta pantalla, no el micrófono del celular.</p><div class="host-sounds"><button class="secondary" data-host-sound="aplausos">Aplausos</button><button class="secondary" data-host-sound="ovacion">Ovación</button><button class="secondary" data-host-sound="abucheo">Abucheo</button></div><label class="switch-row"><span>Juego por equipos<small>Opcional: cualquiera puede seguir participando libremente.</small></span><input id="modeToggleBtn" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span></label><button id="clearBtn" class="danger">Vaciar cola y puntajes</button><button id="lockHostBtn" class="text-button">Bloquear controles</button></section>
 </dialog>
 
 <script>
@@ -166,7 +166,7 @@
     let ytPlayer = null;
     let currentVideoId = null;
     let songCounter = 0;
-    let currentGameMode = 'teams';
+    let currentGameMode = 'arcade';
     let currentQueue = [];
 
     if (typeof confetti === 'undefined') window.confetti = () => console.log("mock confetti");
@@ -294,8 +294,7 @@
         if (state.gameMode !== undefined) {
             currentGameMode = state.gameMode;
             const btn = document.getElementById('modeToggleBtn');
-            if (currentGameMode === 'teams') btn.innerHTML = '🎮 Modo: Equipos';
-            else btn.innerHTML = '🎮 Modo: Arcade';
+            btn.checked = currentGameMode === 'teams';
             const scoreboard = document.getElementById('teamScoreboard');
             if (scoreboard) scoreboard.style.display = currentGameMode === 'teams' ? 'flex' : 'none';
         }
@@ -389,7 +388,7 @@
         el.className = 'floating-emoji';
         el.textContent = emojiChar;
         const side = Math.random() < 0.5 ? 'left' : 'right';
-        let leftPercent = side === 'left' ? Math.random() * 15 : 85 + Math.random() * 15;
+        let leftPercent = side === 'left' ? 18 + Math.random() * 10 : 68 + Math.random() * 10;
         el.style.left = leftPercent + '%';
         el.style.bottom = '-50px';
         document.body.appendChild(el);
@@ -401,7 +400,7 @@
         img.className = 'floating-sticker';
         img.src = imgUrl;
         const side = Math.random() < 0.5 ? 'left' : 'right';
-        let leftPercent = side === 'left' ? Math.random() * 12 : 88 + Math.random() * 12;
+        let leftPercent = side === 'left' ? 18 + Math.random() * 10 : 68 + Math.random() * 10;
         img.style.left = leftPercent + '%';
         img.style.bottom = '-80px';
         document.body.appendChild(img);
@@ -419,7 +418,8 @@
 
     socket.on('effect-triggered', ({ effect, from }) => {
         const sonidos = { 'ovacion': 'ovacion.mp3', 'aplausos': 'aplausos.wav', 'multitud': 'multitud.wav' };
-        if (effect === 'abucheo') { playBoo(); showEffectNotification('Abucheo breve', from); }
+        if (['animo','silbido','zampona'].includes(effect)) { if(canPlayEffect()) void audienceSounds.play(effect); }
+        else if (effect === 'abucheo') { playBoo(); showEffectNotification('Abucheo breve', from); }
         else if (sonidos[effect]) {
             reproducirEfecto(sonidos[effect]);
         }
@@ -572,9 +572,11 @@
     socket.emit('get-state');
 
     // Reuse one audio context and gate all effects independently from music / phone audio.
+    const audienceSounds = new AudienceSounds(0.35);
     let effectsVolume = 0.35, lastAudioEffect = 0, effectsContext = null, effectsAudio = null;
     let chacalMode = 'fiesta', chacalResumeTimer = null, chacalPausedSong = null, chacalWasPlaying = false;
     function prepareEffectsAudio() {
+        audienceSounds.prepare();
         try { if (!effectsContext) effectsContext = new (window.AudioContext || window.webkitAudioContext)(); void effectsContext.resume(); } catch (_) {}
     }
     function canPlayEffect() {
@@ -602,6 +604,7 @@
     document.getElementById('allowBoo').onchange = saveChacalOptions;
     document.getElementById('effectsVolume').oninput = event => {
         effectsVolume = Number(event.target.value) / 100;
+        audienceSounds.setVolume(effectsVolume);
         document.getElementById('effectsVolumeValue').textContent = `${event.target.value} %`;
         if (effectsAudio) effectsAudio.volume = effectsVolume;
         if (effectsVolume === 0) effectsAudio?.pause();
@@ -807,14 +810,13 @@
     socket.on('game-mode-changed', (mode) => {
         currentGameMode = mode;
         const btn = document.getElementById('modeToggleBtn');
-        if (mode === 'teams') btn.innerHTML = '🎮 Modo: Equipos';
-        else btn.innerHTML = '🎮 Modo: Arcade';
+        btn.checked = mode === 'teams';
         const scoreboard = document.getElementById('teamScoreboard');
         if (scoreboard) scoreboard.style.display = mode === 'teams' ? 'flex' : 'none';
     });
 
-    document.getElementById('modeToggleBtn').addEventListener('click', () => {
-        if (isHost) socket.emit('set-mode', { mode: currentGameMode === 'teams' ? 'arcade' : 'teams' });
+    document.getElementById('modeToggleBtn').addEventListener('change', event => {
+        if (isHost) socket.emit('set-mode', { mode: event.target.checked ? 'teams' : 'arcade' });
     });
 
 </script>

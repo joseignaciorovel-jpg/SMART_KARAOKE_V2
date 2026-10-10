@@ -83,3 +83,15 @@ test('loss of audio context mutes output and never restores it silently', async 
     assert.equal(h.engine.muted, true); assert.equal(h.engine.output.gain.value, 0); assert.equal(h.engine.state, 'interrupted');
     await h.engine.stop();
 });
+test('explicit resume keeps level, echo and chosen output after an OS interruption',async()=>{
+ const h=harness();await h.engine.start();h.engine.setGain(.25);h.engine.setEffect('reverb');await h.engine.setMuted(false);
+ h.engine.context.state='suspended';h.engine.context.onstatechange();
+ assert.equal(h.engine.output.gain.value,0);assert.equal(h.engine.desiredMuted,false);
+ await h.engine.resume();assert.equal(h.engine.state,'output');assert.equal(h.engine.gain,.25);assert.equal(h.engine.effect,'reverb');assert.equal(h.engine.output.gain.value,.25);
+ await h.engine.stop();
+});
+
+test('resuming a muted microphone restarts input while keeping output silent',async()=>{
+ const h=harness();await h.engine.start();h.engine.context.state='suspended';h.engine.context.onstatechange();await h.engine.resume();
+ assert.equal(h.engine.context.state,'running');assert.equal(h.engine.muted,true);assert.equal(h.engine.output.gain.value,0);await h.engine.stop();
+});

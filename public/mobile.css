@@ -186,32 +186,32 @@ fieldset {
   padding: 0;
   margin: 14px 0;
 }
-.team-options,
+.team-buttons,
 .two-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
-.team-options label {
+.team-buttons label {
   position: relative;
   margin: 0;
 }
-.team-options input {
+.team-buttons input {
   position: absolute;
   opacity: 0;
 }
-.team-options span {
+.team-buttons span {
   display: block;
   padding: 14px;
   text-align: center;
   border: 1px solid var(--border);
   border-radius: 13px;
 }
-.team-options input:checked + span {
+.team-buttons input:checked + span {
   border-color: var(--accent);
   background: #322638;
 }
-.team-options input:focus-visible + span {
+.team-buttons input:focus-visible + span {
   outline: 3px solid #fff;
 }
 .audio-status {
@@ -368,4 +368,137 @@ textarea {
 #challengeDialog {
   max-width: 430px;
   width: calc(100% - 32px);
+}
+/* Microphone controls */
+.mic-instrument {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 0;
+}
+.mic-figure {
+  margin: 0;
+  text-align: center;
+}
+.mic-figure svg {
+  width: 150px;
+  max-width: 100%;
+  height: 230px;
+}
+.mic-figure span {
+  font-size: 13px;
+  color: #b6bfd0;
+}
+.mic-figure[data-state="output"] svg {
+  filter: drop-shadow(0 0 18px #fc974b66);
+}
+.voice-fader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.voice-fader label {
+  font-size: 12px;
+}
+.voice-fader input[type="range"] {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 36px;
+  height: 180px;
+  padding: 0;
+  accent-color: #ff9c58;
+}
+.voice-fader output {
+  font-weight: 700;
+}
+.switch-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  cursor: pointer;
+}
+.switch-row small {
+  display: block;
+  color: #a9b4c8;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.switch-row input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.switch-track {
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 20px;
+  background: #30394d;
+  border: 1px solid #536078;
+  position: relative;
+}
+.switch-track:after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.switch-row input:checked + .switch-track {
+  background: #e77837;
+  border-color: #ffad70;
+}
+.switch-row input:checked + .switch-track:after {
+  transform: translateX(20px);
+}
+.switch-row input:focus-visible + .switch-track {
+  outline: 3px solid #f5c490;
+  outline-offset: 4px;
+}
+.mic-options {
+  margin-top: 18px;
+  border-top: 1px solid #30394d;
+  padding-top: 14px;
+}
+.sound-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid #30394d;
+}
+.sound-row button {
+  padding: 9px;
+  font-size: 12px;
+}
+.team-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.team-buttons button[aria-pressed="true"] {
+  border-color: #ffad70;
+  background: #4d2d20;
+}
+.team-choice h2 {
+  font-size: 18px;
+}
+
+.mic-ring {
+  fill: #ff9c58;
+}
+.mic-figure span {
+  display: block;
 }

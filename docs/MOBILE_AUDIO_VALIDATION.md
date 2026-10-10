@@ -10,7 +10,11 @@ El analizador mide la entrada antes de la ganancia de salida. La ganancia comien
 
 No se utiliza MediaRecorder, no se registra la voz y no se transmiten fragmentos de audio por Socket.IO. Música y letra continúan en la pantalla de YouTube; la voz sale por el dispositivo de salida del teléfono. Los eventos Socket.IO transmiten canciones, identidades de sesión, turnos, reacciones y efectos.
 
-La interfaz permite probar el micrófono antes del turno. Solo el cantante y los cocantantes pueden enviar un efecto de voz al resto del dúo. Cada cocantante debe activar su propio audio. Se detiene la captura al cambiar de canción, desconectarse, salir o pasar a segundo plano. Volver a la página requiere una nueva activación; la salida no se reanuda de forma audible automáticamente.
+La interfaz permite activar una vez y usar dos switches: salida de voz y eco suave, con un nivel vertical. Nivel, eco y preferencia de pantalla activa se guardan localmente. El eco es individual; no cambia el audio de otros participantes. La salida empieza silenciada al activar desde cero.
+
+Cambiar de canción, desconectar el show o pasar temporalmente a segundo plano ya no detiene deliberadamente el micrófono local. Terminar, salir o abandonar la página sí liberan la captura. El navegador o sistema puede suspender o terminar el audio al bloquear, recibir una llamada o cambiar de aplicación. Se detecta esa interrupción y se ofrece Reanudar conservando nivel y eco. Una pulsación explícita reanuda la salida que estaba elegida; nunca se recupera una salida audible automáticamente.
+
+Con la captura activa se solicita Screen Wake Lock si está disponible y la página es visible. Al volver a la página se vuelve a solicitar. El sistema puede negarlo por ahorro de batería. No permite garantizar audio bajo bloqueo manual; para esa garantía habría que evaluar una aplicación nativa con permisos de audio en segundo plano.
 
 ## Configuración antes de publicar
 
@@ -28,7 +32,8 @@ La interfaz permite probar el micrófono antes del turno. Solo el cantante y los
 - Recuperación de sesión y canción después de reconectar mientras el servidor sigue activo.
 - Comprobación de permisos de anfitrión y aceptación de dúos asociados a una canción vigente.
 - Ausencia de retransmisión del antiguo evento `mic-audio`.
-- Navegación móvil, confirmación de escucha, limpieza al cambiar de canción y mensajes de desconexión.
+- Navegación móvil, switches, preferencias y continuidad al cambiar de canción o desconectar.
+- Wake Lock: recuperación al volver, solicitudes tardías canceladas y rechazo recuperable.
 - Nombres y títulos se insertan como texto en la nueva interfaz; etiquetas en controles de la pantalla.
 
 Las pruebas de audio utilizan simulaciones de Web Audio; las de interfaz utilizan JSDOM y las de sesión ejecutan el servidor Socket.IO real con metadatos de YouTube simulados. Estas pruebas no comprueban sonido, renderizado en Safari, potencia del altavoz o latencia física.

@@ -7,6 +7,7 @@ function screen() {
     const {window} = dom, handlers = new Map(), sent = [], timeouts = [];
     const socket = {on(name, fn){const list = handlers.get(name)||[];list.push(fn);handlers.set(name,list);}, emit(name,payload,ack){sent.push({name,payload});if(name==='authenticate-host'&&ack)ack(null,{ok:payload.key==='test-key'});}, timeout(){return this;}, fire(name,value){for(const fn of handlers.get(name)||[])fn(value);}};
     window.io = () => socket; window.confetti = () => {};
+    window.eval(fs.readFileSync('public/js/sound-library.js','utf8'));
     window.fetch = async () => ({ok:true,json:async()=>({qrImage:'data:image/png;base64,AA=='})});
     window.Audio = class {play(){return Promise.resolve();} pause(){}};
     window.setTimeout = (fn, delay) => {const record={fn,delay,cancelled:false};timeouts.push(record);return record;};

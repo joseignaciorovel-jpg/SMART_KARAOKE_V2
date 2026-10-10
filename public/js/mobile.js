@@ -33,15 +33,35 @@
     invitation = null,
     submitting = false,
     joinPending = false;
-  let feedbackTimer,
-    heard = false,
-    outputVersion = 0;
+  let feedbackTimer;
+  let microphoneWanted = false,
+    leaving = false;
+  const micPreferences = { gain: 15, effect: "normal", keepAwake: true };
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem("firevoice-mic-preferences") || "null",
+    );
+    if (saved) {
+      if (Number.isFinite(Number(saved.gain)))
+        micPreferences.gain = Math.max(0, Math.min(60, Number(saved.gain)));
+      micPreferences.effect = saved.effect === "reverb" ? "reverb" : "normal";
+      micPreferences.keepAwake = saved.keepAwake !== false;
+    }
+  } catch (_) {}
+  function saveMicPreferences() {
+    try {
+      localStorage.setItem(
+        "firevoice-mic-preferences",
+        JSON.stringify(micPreferences),
+      );
+    } catch (_) {}
+  }
   const statusNames = {
     idle: "Micrófono detenido",
     requesting: "Esperando permiso",
-    ready: "Entrada preparada · salida silenciada",
+    ready: "Micrófono listo · salida silenciada",
     muted: "Salida silenciada",
-    output: "Salida habilitada",
+    output: "Tu micrófono está sonando",
     interrupted: "Audio interrumpido",
     error: "No se pudo activar",
   };
@@ -53,6 +73,9 @@
       $("feedback").hidden = true;
     }, 8000);
   }
+  const awake = new ScreenAwake((message) => {
+    $("wakeStatus").textContent = message;
+  });
   const audio = new LocalAudioEngine({
     onState({ state, message, muted }) {
       $("micStatus").textContent = statusNames[state];
@@ -61,22 +84,28 @@
         state,
       );
       $("audioControls").hidden = !active;
-      $("micBtn").hidden = active;
-      $("micBtn").disabled =
-        state === "requesting" || !joined || !socket.connected;
+      $("stopMicBtn").hidden = !active;
+      $("micBtn").hidden = active && state !== "interrupted";
+      $("micBtn").disabled = !joined && !microphoneWanted;
       $("micBtn").textContent =
-        state === "requesting" ? "Solicitando permiso…" : "Activar micrófono";
-      $("cancelMicBtn").hidden = state !== "requesting";
-      $("muteBtn").textContent = muted ? "Habilitar salida" : "Silenciar";
-      $("muteBtn").classList.toggle("danger", !muted);
-      $("heardBtn").disabled = state !== "output";
-      if (state !== "output") {
-        heard = false;
-        ++outputVersion;
-      }
-      $("heardStatus").textContent = heard
-        ? "Escucha confirmada por ti."
-        : "Escucha pendiente de comprobar.";
+        state === "requesting"
+          ? "Cancelar solicitud"
+          : state === "interrupted"
+            ? "Reanudar micrófono"
+            : "Activar micrófono";
+      $("outputSwitch").checked = !muted;
+      $("echoSwitch").checked = audio.effect === "reverb";
+      $("micFigure").dataset.state = state;
+      $("micFigureCaption").textContent =
+        state === "output"
+          ? "Tu voz, en vivo"
+          : state === "interrupted"
+            ? "Un toque para continuar"
+            : "Tu escenario portátil";
+      $("gainControl").disabled = !active;
+      if (state === "idle" || state === "error") void awake.setEnabled(false);
+      else if (active)
+        void awake.setEnabled(micPreferences.keepAwake && microphoneWanted);
     },
     onLevel({ rms, peak }) {
       $("inputLevel").value = Math.min(1, rms * 4);
@@ -89,38 +118,61 @@
             : "Entrada baja: habla cerca del micrófono.";
     },
   });
-  $("micBtn").onclick = () => {
-    if (joined && socket.connected) void audio.start();
+  audio.setGain(micPreferences.gain / 100);
+  audio.setEffect(micPreferences.effect);
+  $("gainControl").value = micPreferences.gain;
+  $("gainValue").value = micPreferences.gain + "%";
+  $("gainControl").disabled = true;
+  $("echoSwitch").checked = micPreferences.effect === "reverb";
+  $("keepAwake").checked = micPreferences.keepAwake;
+  $("micBtn").onclick = async () => {
+    if (audio.state === "requesting") {
+      microphoneWanted = false;
+      await audio.stop();
+      return;
+    }
+    if (!joined && !microphoneWanted)
+      return notify("Entra al show para activar el micrófono.");
+    microphoneWanted = true;
+    if (audio.state === "interrupted") await audio.resume();
+    else await audio.start();
   };
-  $("stopMicBtn").onclick = () => void audio.stop();
-  $("cancelMicBtn").onclick = () => void audio.stop();
-  $("muteBtn").onclick = async () => {
-    const version = ++outputVersion;
-    heard = false;
-    await audio.setMuted(!audio.muted);
-    if (version !== outputVersion) return;
-    $("heardStatus").textContent = "Escucha pendiente de comprobar.";
+  $("stopMicBtn").onclick = async () => {
+    microphoneWanted = false;
+    await awake.setEnabled(false);
+    await audio.stop();
   };
-  $("heardBtn").onclick = () => {
-    if (audio.state !== "output") return;
-    heard = true;
-    $("heardStatus").textContent = "Escucha confirmada por ti.";
+  $("outputSwitch").onchange = async () => {
+    const muted = !$("outputSwitch").checked;
+    if (audio.state === "interrupted") {
+      audio.desiredMuted = muted;
+      await audio.resume();
+    } else await audio.setMuted(muted);
   };
   $("gainControl").oninput = (e) => {
-    audio.setGain(e.target.value / 100);
-    $("gainValue").value = `${e.target.value}%`;
-    heard = false;
-    $("heardStatus").textContent = "Nivel cambiado. Comprueba la escucha.";
+    micPreferences.gain = Number(e.target.value);
+    audio.setGain(micPreferences.gain / 100);
+    $("gainValue").value = micPreferences.gain + "%";
+    saveMicPreferences();
   };
-  $("voiceEffect").onchange = (e) => {
-    audio.setEffect(e.target.value);
-    if (canSing) socket.emit("trigger-voice-effect", e.target.value);
+  $("echoSwitch").onchange = () => {
+    micPreferences.effect = $("echoSwitch").checked ? "reverb" : "normal";
+    audio.setEffect(micPreferences.effect);
+    saveMicPreferences();
   };
-  // Suspension, phone calls and background tabs must never resume an audible mic silently.
+  $("keepAwake").onchange = () => {
+    micPreferences.keepAwake = $("keepAwake").checked;
+    saveMicPreferences();
+    void awake.setEnabled(microphoneWanted && micPreferences.keepAwake);
+  };
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) void audio.stop();
+    void awake.visibilityChanged();
   });
-  window.addEventListener("pagehide", () => void audio.stop());
+  window.addEventListener("pagehide", () => {
+    microphoneWanted = false;
+    void awake.setEnabled(false);
+    void audio.stop();
+  });
   function chooseTab(tabId) {
     document.querySelectorAll(".tab-panel").forEach((panel) => {
       panel.hidden = panel.id !== tabId;
@@ -154,11 +206,13 @@
     joinPending = false;
     $("connectionStatus").textContent = "Sin conexión";
     $("enterBtn").disabled = false;
-    $("micBtn").disabled = true;
-    void audio.stop();
-    notify(
-      "Se perdió la conexión. El micrófono se detuvo; vuelve a activarlo cuando reconecte.",
-    );
+    $("micBtn").disabled = !microphoneWanted;
+    if (!leaving)
+      notify(
+        microphoneWanted
+          ? "Sin conexión al show. Tu micrófono local puede seguir funcionando; conservamos tus ajustes."
+          : "Se perdió la conexión al show. Reconectando…",
+      );
   });
   socket.on("connect_error", () => {
     $("connectionStatus").textContent = "Reconectando…";
@@ -171,7 +225,7 @@
       return notify("Espera a que se restablezca la conexión.");
     session = {
       nickname: $("nicknameInput").value.trim(),
-      team: document.querySelector("input[name=team]:checked").value,
+      team: null,
     };
     if (!session.nickname) return;
     enterSession();
@@ -185,12 +239,14 @@
     $("mainSection").hidden = false;
     $("enterBtn").disabled = false;
     $("micBtn").disabled = false;
-    $("userTeamBadge").textContent =
-      `${data.nickname} · ${data.team === "red" ? "🔴 Rojo" : "🔵 Azul"}`;
+    updateTeamBadge();
     socket.emit("get-state");
     socket.emit("get-challenge-invitations");
   });
   $("leaveBtn").onclick = async () => {
+    leaving = true;
+    microphoneWanted = false;
+    await awake.setEnabled(false);
     await audio.stop();
     session = null;
     joined = false;
@@ -206,6 +262,7 @@
     invitation = null;
     totalClicks = 0;
     updateEnergy();
+    leaving = false;
   };
   function updateEnergy() {
     $("energyText").textContent =
@@ -306,11 +363,8 @@
     updateParty(data);
     const newId = data.currentSong?.id || null;
     if (receivedState && newId !== activeSongId) {
-      void audio.stop();
       totalClicks = 0;
       updateEnergy();
-      $("voiceEffect").value = "normal";
-      audio.setEffect("normal");
       $("receiveDialog").close();
       $("inviteDialog").close();
       invitation = null;
@@ -344,7 +398,7 @@
         : data.currentSong
           ? `Canta ${data.currentSong.requester}. Puedes probar tu micrófono mientras esperas.`
           : "Añade una canción para entrar en la cola.";
-    $("scoreboard").hidden = data.gameMode === "arcade";
+    $("scoreboard").hidden = data.gameMode !== "teams";
     if (data.teamScores) updateScores(data.teamScores);
     const list = $("songQueue");
     list.replaceChildren();
@@ -361,20 +415,18 @@
         item.append(caption);
         list.append(item);
       });
-    const effect = canSing ? data.activeVoiceEffect || "normal" : audio.effect;
-    audio.setEffect(effect);
-    $("voiceEffect").value = audio.effect;
+    updateTeamMode(data.gameMode);
+    $("giphyStatus").textContent =
+      data.stickersAvailable === false
+        ? "Giphy requiere que el anfitrión configure una clave privada válida. Las demás reacciones siguen disponibles."
+        : "Busca stickers para animar el show.";
   });
   function updateScores(scores) {
     $("redPoints").textContent = scores.red || 0;
     $("bluePoints").textContent = scores.blue || 0;
   }
   socket.on("team-scores", updateScores);
-  socket.on("voice-effect-changed", ({ effect }) => {
-    if (!canSing) return;
-    audio.setEffect(effect);
-    $("voiceEffect").value = audio.effect;
-  });
+  // Echo is a preference of this phone, never overwritten by the show state.
   $("inviteBtn").onclick = () => socket.emit("get-participants");
   socket.on("participants-list", (list) => {
     $("inviteList").replaceChildren();
@@ -424,8 +476,9 @@
       const response = await fetch(
         `/api/giphy?q=${encodeURIComponent($("giphySearch").value || "party")}`,
       );
-      if (!response.ok) throw new Error("search");
       const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || "No se pudo buscar stickers.");
       container.replaceChildren();
       (data.data || []).forEach((sticker) => {
         const button = document.createElement("button");
@@ -443,11 +496,104 @@
       });
       if (!container.children.length)
         container.textContent = "No encontramos stickers con esa búsqueda.";
-    } catch (_) {
-      container.textContent = "No se pudo buscar. Vuelve a intentarlo.";
+    } catch (error) {
+      container.textContent =
+        error.message || "No se pudo buscar. Vuelve a intentarlo.";
     }
   };
 
+  let teamsEnabled = false;
+  function updateTeamBadge() {
+    if (session)
+      $("userTeamBadge").textContent =
+        session.nickname +
+        (teamsEnabled && session.team
+          ? " · " + (session.team === "red" ? "🔴 Rojo" : "🔵 Azul")
+          : " · Participación libre");
+  }
+  function updateTeamMode(mode) {
+    teamsEnabled = mode === "teams";
+    $("teamChoice").hidden = !teamsEnabled;
+    updateTeamBadge();
+    document
+      .querySelectorAll("[data-team]")
+      .forEach((button) =>
+        button.setAttribute(
+          "aria-pressed",
+          String((session?.team || "none") === button.dataset.team),
+        ),
+      );
+  }
+  document.querySelectorAll("[data-team]").forEach(
+    (button) =>
+      (button.onclick = () => {
+        if (!joined || !socket.connected)
+          return notify("Conéctate antes de elegir equipo.");
+        socket
+          .timeout(5000)
+          .emit(
+            "choose-team",
+            {
+              team: button.dataset.team === "none" ? null : button.dataset.team,
+            },
+            (error, result) => {
+              $("teamFeedback").textContent = error
+                ? "No se confirmó el equipo."
+                : result?.message || "Sin respuesta.";
+            },
+          );
+      }),
+  );
+  socket.on("team-chosen", ({ team }) => {
+    if (session) {
+      session.team = team;
+      storage.set(session);
+      updateTeamMode(teamsEnabled ? "teams" : "arcade");
+    }
+  });
+  const previews = new AudienceSounds(0.35);
+  let previewAt = 0;
+  function buildSounds(allowBoo = false) {
+    const container = $("soundLibrary");
+    container.replaceChildren();
+    AudienceSounds.catalog
+      .filter((sound) => !sound.optional || allowBoo)
+      .forEach((sound) => {
+        const row = document.createElement("div");
+        row.className = "sound-row";
+        const name = document.createElement("strong");
+        name.textContent = sound.icon + " " + sound.name;
+        const preview = document.createElement("button");
+        preview.className = "secondary";
+        preview.textContent = "Probar";
+        preview.setAttribute("aria-label", "Probar " + sound.name);
+        preview.onclick = async () => {
+          if (Date.now() - previewAt < 4000) {
+            $("soundFeedback").textContent =
+              "Espera unos segundos entre pruebas.";
+            return;
+          }
+          previewAt = Date.now();
+          const result = await previews.play(sound.id);
+          $("soundFeedback").textContent = result.ok
+            ? "Escuchas una prueba en este teléfono."
+            : result.message;
+        };
+        const send = document.createElement("button");
+        send.className = "primary";
+        send.textContent = "Enviar";
+        send.setAttribute("aria-label", "Enviar " + sound.name);
+        send.onclick = () =>
+          call("trigger-effect", sound.id, (result) => {
+            $("soundFeedback").textContent = result.message;
+          });
+        row.append(name, preview, send);
+        container.append(row);
+      });
+  }
+  buildSounds();
+  let lastBooOption = false;
+  window.addEventListener("pagehide", () => previews.dispose());
   let partyState = {},
     challengeInvitation = null,
     sendingChallenge = false,
@@ -535,6 +681,10 @@
   }
   function updateParty(data) {
     partyState = data;
+    if (Boolean(data.allowBoo) !== lastBooOption) {
+      lastBooOption = Boolean(data.allowBoo);
+      buildSounds(lastBooOption);
+    }
     const support = data.support,
       id = session?.participantId;
     const voted = support?.votes.includes(id),

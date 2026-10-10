@@ -17,10 +17,16 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json({ limit: "16kb" }));
 
-const GIPHY_API_KEY = process.env.GIPHY_KEY || '';
+const GIPHY_API_KEY = process.env.GIPHY_KEY || "";
 
 app.get("/api/giphy", async (req, res) => {
-  if (!GIPHY_API_KEY) return res.status(503).json({error:"Stickers no configurados: el anfitrión debe establecer GIPHY_KEY."});
+  if (!GIPHY_API_KEY)
+    return res
+      .status(503)
+      .json({
+        error:
+          "Stickers no configurados: el anfitrión debe establecer GIPHY_KEY.",
+      });
   const query = req.query.q || "party";
   try {
     const url = `https://api.giphy.com/v1/stickers/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=9&rating=g`;
@@ -97,7 +103,7 @@ let peakApplause = 0;
 let currentSongVotesChacal = new Set();
 let activeVoiceEffect = "normal";
 let voiceEffectTimeout = null;
-let gameMode = "teams";
+let gameMode = "arcade";
 let chacalMode = "fiesta",
   allowBoo = false,
   lastChacalAt = 0,
@@ -240,6 +246,7 @@ function emitFullState(target = io) {
         ? currentSongVotesChacal.size / participants.size
         : 0,
     gameMode,
+    stickersAvailable: Boolean(GIPHY_API_KEY),
     chacalMode,
     allowBoo,
     lighting: party.lighting,
@@ -377,7 +384,7 @@ io.on("connection", (socket) => {
     if (
       typeof nickname !== "string" ||
       !nickname.trim() ||
-      !["red", "blue"].includes(team)
+      ![null, undefined, "red", "blue"].includes(team)
     )
       return;
     if (sessions.size >= 500 && !sessions.has(sessionToken))
@@ -393,7 +400,7 @@ io.on("connection", (socket) => {
         id: crypto.randomUUID(),
         token: crypto.randomBytes(32).toString("hex"),
         nickname: nickname.trim().slice(0, 40),
-        team,
+        team: gameMode === "teams" ? team || null : null,
       };
       sessions.set(session.token, session);
     }
@@ -413,10 +420,30 @@ io.on("connection", (socket) => {
       sessionToken: session.token,
     });
     if (!resumed)
-      io.emit(
-        "notification",
-        `${session.nickname} se unió al equipo ${session.team === "red" ? "Rojo 🔴" : "Azul 🔵"}`,
-      );
+      io.emit("notification", `${session.nickname} se unió al show`);
+    emitFullState();
+  });
+
+  socket.on("choose-team", (payload = {}, ack = () => {}) => {
+    const team = payload?.team;
+    if (!socket.data.participantId)
+      return ack({ ok: false, message: "Entra al show primero." });
+    if (![null, "red", "blue"].includes(team) || (team && gameMode !== "teams"))
+      return ack({ ok: false, message: "Los equipos no están activos." });
+    const session = [...sessions.values()].find(
+      (item) => item.id === socket.data.participantId,
+    );
+    if (!session)
+      return ack({ ok: false, message: "Vuelve a entrar al show." });
+    session.team = team;
+    participantTeams.set(socket.id, team);
+    socket.emit("team-chosen", { team });
+    ack({
+      ok: true,
+      message: team
+        ? "Equipo elegido. Puedes cambiarlo o seguir libre."
+        : "Participación libre.",
+    });
     emitFullState();
   });
 
@@ -558,16 +585,37 @@ io.on("connection", (socket) => {
     else socket.emit("error-msg", "Enlace no válido");
   });
 
-  socket.on("trigger-effect", (effectName) => {
+  socket.on("trigger-effect", (effectName, ack = () => {}) => {
     if (
       (!socket.data.participantId && !socket.data.isHost) ||
       typeof effectName !== "string" ||
       effectName.length > 30
     )
-      return;
-    if (["ovacion", "aplausos", "abucheo", "multitud"].includes(effectName)) {
-      if (effectName === "abucheo" && !allowBoo) return;
-      if (Date.now() - lastSoundAt < 6000) return;
+      return ack({
+        ok: false,
+        message: "Entra al show para enviar una reacción válida.",
+      });
+    if (
+      [
+        "ovacion",
+        "aplausos",
+        "abucheo",
+        "multitud",
+        "animo",
+        "silbido",
+        "zampona",
+      ].includes(effectName)
+    ) {
+      if (effectName === "abucheo" && !allowBoo)
+        return ack({
+          ok: false,
+          message: "El anfitrión desactivó el abucheo.",
+        });
+      if (Date.now() - lastSoundAt < 6000)
+        return ack({
+          ok: false,
+          message: "Espera unos segundos entre sonidos.",
+        });
       lastSoundAt = Date.now();
     }
     const sender = participants.get(socket.id);
@@ -578,6 +626,7 @@ io.on("connection", (socket) => {
       effect: effectName,
       from: sender || "Alguien",
     });
+    ack({ ok: true, message: "Reacción enviada al show." });
   });
 
   socket.on("send-sticker", (stickerUrl) => {

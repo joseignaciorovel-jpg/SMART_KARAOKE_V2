@@ -36,3 +36,9 @@ Pruebas de Socket.IO con servidor real para autorización, consentimiento, cance
 ## Configuración de stickers
 
 Se retiró la credencial Giphy incrustada en la versión anterior. Configurar `GIPHY_KEY` como variable del servicio para habilitar stickers; sin ella el endpoint responde 503. No se copian secretos de producción a la prueba.
+
+## Participación y sonidos
+
+Ingreso por apodo, sin equipo obligatorio. Participación libre es el modo inicial. El anfitrión activa Juego por equipos con un switch; entonces cada persona puede elegir rojo, azul o seguir sin equipo, manteniendo identidad, cola y ranking. Las elecciones por equipo no determinan duetos ni duelos.
+
+Biblioteca del público: aplausos, ovación, multitud, ánimo por voz del navegador, silbido y zampoña sintetizados. Probar reproduce solo en el teléfono; Enviar solicita el efecto en la pantalla. El volumen del anfitrión afecta únicamente los efectos de la pantalla. Hay un intervalo global de seis segundos entre sonidos para evitar superposiciones y un abucheo optativo. No se agrega una API de pago ni grabación de voz. Las reacciones ascienden por dos zonas interiores y se desvanecen al salir por arriba.

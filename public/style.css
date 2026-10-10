@@ -1206,3 +1206,51 @@ body[data-lighting="party"] .performance::before {
 .right-column .qr-area .qr-image {
   width: 88px;
 }
+.host-settings .switch-row {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+.switch-row small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.switch-row input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.switch-track {
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 20px;
+  background: #30394d;
+  position: relative;
+}
+.switch-track:after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.15s;
+}
+.switch-row input:checked + .switch-track {
+  background: #e77837;
+}
+.switch-row input:checked + .switch-track:after {
+  transform: translateX(20px);
+}
+.switch-row input:focus-visible + .switch-track {
+  outline: 3px solid #f5c490;
+  outline-offset: 4px;
+}

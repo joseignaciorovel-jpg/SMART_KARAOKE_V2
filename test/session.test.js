@@ -134,3 +134,16 @@ test('challenge consent, song-bound support, separate duet permissions and conse
     const exported=await new Promise((resolve,reject)=>host.timeout(2000).emit('export-session',(error,result)=>error?reject(error):resolve(result)));assert.equal(exported.ok,true);assert.ok(exported.data.sessions.some(s=>s.token===sa.sessionToken));
     assert.equal((await ack(c,'import-session',exported.data)).ok,false);assert.equal((await ack(host,'import-session',exported.data)).ok,false);
 });
+
+test('free participants can opt into teams without changing identity and receive sound feedback',async()=>{
+ const host=await connect(),guest=await connect();await ack(host,'authenticate-host',{key:process.env.HOST_KEY});
+ host.emit('set-mode',{mode:'arcade'});await state(host);
+ const profile=await join(guest,{nickname:'Libre',team:null});assert.equal(profile.team,null);
+ assert.equal((await ack(guest,'choose-team',{team:'red'})).ok,false);
+ host.emit('set-mode',{mode:'teams'});await state(host);
+ const changed=event(guest,'team-chosen');assert.equal((await ack(guest,'choose-team',{team:'red'})).ok,true);assert.equal((await changed).team,'red');
+ assert.equal((await state(host)).participantList.find(p=>p.id===profile.participantId).team,'red');
+ assert.equal((await ack(guest,'choose-team',{team:null})).ok,true);
+ await ack(host,'set-chacal-options',{mode:'fiesta',allowBoo:false});assert.equal((await ack(guest,'trigger-effect','abucheo')).ok,false);
+ assert.equal((await ack(guest,'trigger-effect','silbido')).ok,true);assert.equal((await ack(guest,'trigger-effect','animo')).ok,false);
+});
